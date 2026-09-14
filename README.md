@@ -5,7 +5,7 @@
 index.html       홈 (히어로 + 4개 섹션 카드)
 dashboard.html    Macro Dashboard 전체 (기존 파일 그대로 반영됨)
 charts.html       TradingView 실시간 차트
-blog.html         Blogger 연결 페이지 (링크 채워 넣어야 함)
+blog.html         Blogger 연결 페이지 (movenine.blogspot.com 연결됨)
 youtube.html      유튜브 채널 연결 페이지 (개설 후 링크/임베드 추가)
 assets/site.css   공통 네비게이션·푸터 스타일
 ```
@@ -41,7 +41,7 @@ assets/site.css   공통 네비게이션·푸터 스타일
 
 ## 아직 채워야 할 항목
 
-- [ ] `blog.html` — Blogger 실제 주소로 링크 교체
+- [x] `blog.html` — Blogger 실제 주소로 링크 교체
 - [ ] `youtube.html` — 채널 개설 후 구독 링크 + 최신 영상 임베드 추가
 - [ ] (선택) 커스텀 도메인 연결: 저장소 Settings → Pages → Custom domain
 

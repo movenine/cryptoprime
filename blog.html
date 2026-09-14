@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>블로그 — Master Score Lab</title>
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="brand"><span class="mark">M</span>Master Score Lab</div>
+  <ul>
+    <li><a href="index.html">홈</a></li>
+    <li><a href="dashboard.html">대시보드</a></li>
+    <li><a href="charts.html">차트</a></li>
+    <li><a href="blog.html" class="active">블로그</a></li>
+    <li><a href="youtube.html">유튜브</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap">
+  <h1>✍️ 블로그</h1>
+  <p class="lede">매크로 국면과 종목 이벤트를 풀어 쓴 글은 Blogger에 게시됩니다.</p>
+
+  <div class="placeholder-box">
+    아직 Blogger 주소가 연결되지 않았습니다.<br>
+    아래 링크의 <code>href</code>를 실제 블로그 주소로 교체해 주세요.
+    <code>&lt;a href="https://YOUR-BLOG-NAME.blogspot.com"&gt;블로그 방문하기&lt;/a&gt;</code>
+  </div>
+
+  <p style="margin-top:20px;">
+    <a href="#" id="blog-link" style="font-size:14px;font-weight:700;">→ 블로그 방문하기 (링크 연결 필요)</a>
+  </p>
+</div>
+
+<footer class="site-footer">
+  <div>© <span id="year"></span> Master Score Lab. 본 자료는 정보 제공 목적으로 작성되었으며 투자 자문이 아닙니다.</div>
+  <div class="links">
+    <a href="index.html">홈</a>
+    <a href="dashboard.html">대시보드</a>
+    <a href="charts.html">차트</a>
+    <a href="youtube.html">유튜브</a>
+  </div>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

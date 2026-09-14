@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master Score Lab — 매크로를 점수로 읽는다</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .hero-wrap { max-width: 880px; margin: 0 auto; padding: 56px 20px 20px; }
+  .hero-eyebrow { font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 14px; }
+  .hero h1 {
+    font-size: 34px; font-weight: 800; line-height: 1.35; letter-spacing: -0.4px;
+    margin: 0 0 16px; word-break: keep-all;
+  }
+  @media (max-width: 560px) { .hero h1 { font-size: 26px; } }
+  .hero p.lede { font-size: 15px; color: var(--text-dim); max-width: 560px; word-break: keep-all; margin-bottom: 32px; }
+
+  /* ── 0~100 스코어 스펙트럼 (브랜드 모티프) ───────────────────────── */
+  .spectrum {
+    display: grid; grid-template-columns: repeat(5, 1fr); border-radius: 12px;
+    overflow: hidden; border: 1px solid var(--card-border); margin-bottom: 10px;
+  }
+  .spectrum div { padding: 14px 6px; text-align: center; font-size: 11px; font-weight: 700; color: #0b0d12; }
+  .spectrum .s1 { background: var(--red); }
+  .spectrum .s2 { background: var(--orange); }
+  .spectrum .s3 { background: var(--yellow); }
+  .spectrum .s4 { background: #6ee7b7; }
+  .spectrum .s5 { background: var(--green); }
+  .spectrum-caption {
+    display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace;
+    font-size: 11px; color: var(--text-dim); margin-bottom: 44px;
+  }
+
+  .cta-row { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+  .cta-primary, .cta-secondary {
+    padding: 11px 20px; border-radius: 10px; font-size: 13.5px; font-weight: 700; text-decoration: none;
+  }
+  .cta-primary { background: var(--accent); color: #0b0d12; }
+  .cta-secondary { background: var(--card); color: var(--text); border: 1px solid var(--card-border); }
+  .cta-primary:hover, .cta-secondary:hover { text-decoration: none; opacity: 0.9; }
+
+  /* ── 섹션 카드 ───────────────────────── */
+  .section-grid {
+    max-width: 880px; margin: 20px auto 0; padding: 20px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  @media (max-width: 560px) { .section-grid { grid-template-columns: 1fr; } }
+  .nav-card {
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 14px;
+    padding: 20px; display: block; color: var(--text);
+  }
+  .nav-card:hover { border-color: var(--accent); text-decoration: none; }
+  .nav-card .tag { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.3px; margin-bottom: 8px; display: block; }
+  .nav-card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 700; }
+  .nav-card p { margin: 0; font-size: 13px; color: var(--text-dim); word-break: keep-all; }
+
+  .disclaimer-strip {
+    max-width: 880px; margin: 8px auto 0; padding: 0 20px;
+    font-size: 12px; color: #6b7280; word-break: keep-all;
+  }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="brand"><span class="mark">M</span>Master Score Lab</div>
+  <ul>
+    <li><a href="index.html" class="active">홈</a></li>
+    <li><a href="dashboard.html">대시보드</a></li>
+    <li><a href="charts.html">차트</a></li>
+    <li><a href="blog.html">블로그</a></li>
+    <li><a href="youtube.html">유튜브</a></li>
+  </ul>
+</nav>
+
+<header class="hero-wrap">
+  <div class="hero-eyebrow">GLOBAL MACRO DASHBOARD</div>
+  <div class="hero">
+    <h1>유동성, 금리, 신용, AI 사이클을<br>하나의 점수로 읽습니다.</h1>
+    <p class="lede">
+      Master Score는 매일의 매크로 환경을 유동성 35% · 금리스트레스 30% · 신용 15% · AI사이클 20%로 계산해
+      0~100점 하나로 압축합니다. 감정이 아니라 산식으로 시장 국면을 판정합니다.
+    </p>
+  </div>
+
+  <div class="spectrum">
+    <div class="s1">0~19</div><div class="s2">20~39</div><div class="s3">40~59</div><div class="s4">60~79</div><div class="s5">80~100</div>
+  </div>
+  <div class="spectrum-caption">
+    <span>뚜렷한 리스크오프</span><span>뚜렷한 리스크온</span>
+  </div>
+
+  <div class="cta-row">
+    <a class="cta-primary" href="dashboard.html">최신 대시보드 보기 →</a>
+    <a class="cta-secondary" href="blog.html">블로그 읽기</a>
+  </div>
+</header>
+
+<section class="section-grid">
+  <a class="nav-card" href="dashboard.html">
+    <span class="tag">LIVE</span>
+    <h3>📊 Macro Dashboard</h3>
+    <p>Master Score, 조기경보 임계값, 포트폴리오 이벤트를 한 화면에서 확인합니다.</p>
+  </a>
+  <a class="nav-card" href="charts.html">
+    <span class="tag">CHARTS</span>
+    <h3>📈 TradingView 차트</h3>
+    <p>대시보드가 추적하는 핵심 지표를 실시간 차트로 직접 확인합니다.</p>
+  </a>
+  <a class="nav-card" href="blog.html">
+    <span class="tag">BLOG</span>
+    <h3>✍️ 블로그</h3>
+    <p>매크로 국면과 종목 이벤트를 풀어 쓴 글을 정리합니다.</p>
+  </a>
+  <a class="nav-card" href="youtube.html">
+    <span class="tag">VIDEO</span>
+    <h3>▶️ 유튜브 채널</h3>
+    <p>Master Score Lab 채널에서 영상으로 만나보세요.</p>
+  </a>
+</section>
+
+<p class="disclaimer-strip">⚠️ 본 사이트의 모든 콘텐츠는 참고용 정보 제공이며 투자 권유·자문이 아닙니다. Master Score는 자체 산정 주관적 지표입니다.</p>
+
+<footer class="site-footer">
+  <div>© <span id="year"></span> Master Score Lab. 본 자료는 정보 제공 목적으로 작성되었으며 투자 자문이 아닙니다.</div>
+  <div class="links">
+    <a href="dashboard.html">대시보드</a>
+    <a href="charts.html">차트</a>
+    <a href="blog.html">블로그</a>
+    <a href="youtube.html">유튜브</a>
+  </div>
+</footer>
+
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

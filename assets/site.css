@@ -1,0 +1,87 @@
+:root {
+  --bg: #0b0d12;
+  --card: #14171f;
+  --card-border: #262b38;
+  --text: #e8eaed;
+  --text-dim: #9aa1b2;
+  --green: #34d399;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --orange: #fb923c;
+  --accent: #60a5fa;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  line-height: 1.55;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Top nav ───────────────────────── */
+.site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--card-border);
+}
+.site-nav .brand {
+  font-weight: 800;
+  font-size: 15px;
+  color: #fff;
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.site-nav .brand .mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 6px;
+  background: var(--accent); color: #0b0d12;
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 700;
+}
+.site-nav ul {
+  list-style: none; display: flex; gap: 22px;
+  margin: 0; padding: 0;
+}
+.site-nav a {
+  color: var(--text-dim); font-size: 13.5px; font-weight: 500;
+}
+.site-nav a.active, .site-nav a:hover { color: #fff; text-decoration: none; }
+@media (max-width: 560px) {
+  .site-nav { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .site-nav ul { gap: 16px; flex-wrap: wrap; }
+}
+
+/* ── Footer ───────────────────────── */
+.site-footer {
+  max-width: 880px; margin: 40px auto 0; padding: 20px 20px 40px;
+  border-top: 1px solid var(--card-border);
+  font-size: 11.5px; color: #6b7280; word-break: keep-all;
+}
+.site-footer .links { margin-top: 8px; }
+.site-footer .links a { color: #6b7280; margin-right: 14px; }
+.site-footer .links a:hover { color: var(--text-dim); }
+
+/* ── Simple placeholder pages ───────────────────────── */
+.page-wrap { max-width: 880px; margin: 0 auto; padding: 40px 20px 20px; }
+.page-wrap h1 { font-size: 22px; font-weight: 800; margin: 0 0 10px; }
+.page-wrap .lede { color: var(--text-dim); font-size: 14px; margin-bottom: 28px; word-break: keep-all; }
+.placeholder-box {
+  background: var(--card); border: 1px dashed var(--card-border);
+  border-radius: 14px; padding: 28px; text-align: center;
+  color: var(--text-dim); font-size: 13.5px;
+}
+.placeholder-box code {
+  display: block; margin-top: 10px; font-family: "IBM Plex Mono", monospace;
+  font-size: 12px; color: var(--accent); word-break: break-all;
+}

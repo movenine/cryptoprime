@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingView 차트 — Master Score Lab</title>
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .chart-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+  .chart-card h3 { margin: 0 0 12px; font-size: 14px; color: var(--text-dim); font-weight: 600; }
+  .tv-embed { border-radius: 10px; overflow: hidden; }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="brand"><span class="mark">M</span>Master Score Lab</div>
+  <ul>
+    <li><a href="index.html">홈</a></li>
+    <li><a href="dashboard.html">대시보드</a></li>
+    <li><a href="charts.html" class="active">차트</a></li>
+    <li><a href="blog.html">블로그</a></li>
+    <li><a href="youtube.html">유튜브</a></li>
+  </ul>
+</nav>
+
+<div class="page-wrap">
+  <h1>📈 TradingView 차트</h1>
+  <p class="lede">대시보드가 추적하는 핵심 지표를 실시간 TradingView 위젯으로 확인합니다. 아래는 예시(미국 10년물)이며, 필요한 지표를 추가로 붙일 수 있습니다.</p>
+
+  <div class="chart-card">
+    <h3>TVC:US10Y — 미국 10년물 국채금리</h3>
+    <div class="tv-embed">
+      <div class="tradingview-widget-container">
+        <div id="tv_us10y"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+        <script type="text/javascript">
+          new TradingView.widget({
+            "width": "100%",
+            "height": 400,
+            "symbol": "TVC:US10Y",
+            "interval": "D",
+            "timezone": "Asia/Seoul",
+            "theme": "dark",
+            "style": "1",
+            "locale": "kr",
+            "toolbar_bg": "#14171f",
+            "enable_publishing": false,
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "container_id": "tv_us10y"
+          });
+        </script>
+      </div>
+    </div>
+  </div>
+
+  <div class="placeholder-box">
+    추가 지표를 붙이려면 위 블록을 복사해 <code>symbol</code> 값만 바꾸면 됩니다.<br>
+    예: <code>FX_IDC:USDJPY</code>, <code>NASDAQ:SMH</code>, <code>BINANCE:BTCUSDT</code>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div>© <span id="year"></span> Master Score Lab. 본 자료는 정보 제공 목적으로 작성되었으며 투자 자문이 아닙니다.</div>
+  <div class="links">
+    <a href="index.html">홈</a>
+    <a href="dashboard.html">대시보드</a>
+    <a href="blog.html">블로그</a>
+    <a href="youtube.html">유튜브</a>
+  </div>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

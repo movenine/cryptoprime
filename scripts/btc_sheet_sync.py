@@ -16,11 +16,24 @@ URL로 읽어와 저장소 data/btc_derivatives_log.csv로 그대로 미러링�
 import csv
 import io
 import os
+import urllib.error
 import urllib.request
 
 SHEET_ID = "1-NOv34PjewTj8JQqURz7xlTd81yzbFfiBa5tsM8MgPE"
 SHEET_GID = "0"  # 시트 탭이 여러 개이고 로그가 첫 탭이 아니면 실제 gid로 교체
-EXPORT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={SHEET_GID}"
+
+# 시트 공유가 켜져 있어도 /export 엔드포인트가 302→400을 내는 경우가 있어
+# gviz/tq CSV 엔드포인트를 1순위로, /export를 2순위 폴백으로 시도한다.
+CANDIDATE_URLS = [
+    f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={SHEET_GID}",
+    f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={SHEET_GID}",
+]
+
+# 브라우저에 가까운 UA — 일부 Google 엔드포인트가 스크립트성 UA에 다르게 응답하는 경우 대비
+BROWSER_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+)
 
 OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "btc_derivatives_log.csv")
 
@@ -37,12 +50,32 @@ ARROW_UP = {"▲", "up", "UP", "상승"}
 ARROW_DOWN = {"▼", "down", "DOWN", "하락"}
 
 
-def fetch_csv_rows():
-    req = urllib.request.Request(EXPORT_URL, headers={"User-Agent": "master-score-lab-btc-sync/1.0"})
+def _try_fetch(url):
+    req = urllib.request.Request(url, headers={"User-Agent": BROWSER_UA})
     with urllib.request.urlopen(req, timeout=20) as resp:
-        text = resp.read().decode("utf-8-sig")
-    reader = csv.DictReader(io.StringIO(text))
-    return list(reader), reader.fieldnames
+        return resp.geturl(), resp.read().decode("utf-8-sig")
+
+
+def fetch_csv_rows():
+    last_err = None
+    for url in CANDIDATE_URLS:
+        try:
+            final_url, text = _try_fetch(url)
+            print(f"성공: {url} -> {final_url} ({len(text)} bytes)")
+            reader = csv.DictReader(io.StringIO(text))
+            rows = list(reader)
+            if not rows:
+                print(f"경고: {url} 응답에 데이터 행이 없음, 다음 후보 시도")
+                continue
+            return rows, reader.fieldnames
+        except urllib.error.HTTPError as e:
+            body = e.read(500).decode("utf-8", "replace")
+            print(f"실패: {url} -> HTTP {e.code} {e.reason}\n응답 본문(앞 500자): {body}")
+            last_err = e
+        except urllib.error.URLError as e:
+            print(f"실패: {url} -> {e.reason}")
+            last_err = e
+    raise last_err if last_err else RuntimeError("모든 후보 URL이 실패했습니다")
 
 
 def to_float(s):

@@ -147,7 +147,7 @@
     </table>
   </div>
   <div class="btc-history-footnote" id="btcHistoryFootnote">
-    <sup>*</sup> 위 2건은 2026-09-03 Binance 기준 수동 수집분입니다. 2026-09-15부터는 GitHub Actions가 매시 OKX·CoinGecko 공개 API로 <code>data/btc_derivatives.csv</code>에 자동 적재하며, 이 표는 그 파일의 최신 5건을 자동으로 불러와 표시합니다(불러오기 실패 시 위 수동 기록이 유지됩니다). 거래소가 달라 L/S 비율은 계정/포지션/글로벌 3종 대신 단일 비율로 단순화됩니다.
+    <sup>*</sup> 위 2건은 2026-09-03 수동 수집분입니다. 로컬 Python이 Binance API로 "BTC Derivatives Log" 구글시트에 계속 적재하면, GitHub Actions가 매시 그 시트를 <code>data/btc_derivatives_log.csv</code>로 동기화하고 가격×OI 매트릭스 + L/S 계정·포지션 디버전스 기준 해석을 계산합니다. 이 표는 그 파일의 최신 5건을 자동으로 불러와 표시합니다(불러오기 실패 시 위 수동 기록이 유지됩니다). Perp Volume 컬럼은 아직 수집되지 않아 잠정적으로 Notional OI로 표기합니다.
   </div>
 
   <!-- ══════════ 2. 상태 박스 ══════════ -->
@@ -254,33 +254,43 @@
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 <script>
 (function () {
-  function fmtDate(iso) {
-    // "2026-09-15T04:00:00Z" -> "09-15 04:00 UTC"
-    var m = iso.match(/^\d{4}-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-    return m ? (m[1] + '-' + m[2] + ' ' + m[3] + ':' + m[4] + ' UTC') : iso;
-  }
   function fmtUsd(n) {
     return '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
   }
   function fmtCompact(n) {
     n = Number(n);
+    if (!isFinite(n)) return '—';
     if (Math.abs(n) >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
     if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
     return fmtUsd(n);
   }
+  // 따옴표로 감싼 필드(콤마·줄바꿈 포함 가능)를 지원하는 최소 CSV 파서
   function parseCsv(text) {
-    var lines = text.trim().split('\n').filter(Boolean);
-    if (lines.length < 2) return [];
-    var headers = lines[0].split(',');
-    return lines.slice(1).map(function (line) {
-      var cells = line.split(',');
-      var row = {};
-      headers.forEach(function (h, i) { row[h] = cells[i]; });
-      return row;
-    });
+    var rows = [], row = [], field = '', inQuotes = false;
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      if (inQuotes) {
+        if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; } }
+        else { field += c; }
+      } else if (c === '"') { inQuotes = true; }
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else { field += c; }
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    if (rows.length < 2) return [];
+    var headers = rows[0];
+    return rows.slice(1)
+      .filter(function (r) { return r.length === headers.length && r.some(function (x) { return x !== ''; }); })
+      .map(function (r) {
+        var obj = {};
+        headers.forEach(function (h, i) { obj[h] = r[i]; });
+        return obj;
+      });
   }
 
-  fetch('data/btc_derivatives.csv', { cache: 'no-store' })
+  fetch('data/btc_derivatives_log.csv', { cache: 'no-store' })
     .then(function (res) { if (!res.ok) throw new Error('fetch failed'); return res.text(); })
     .then(function (text) {
       var rows = parseCsv(text);
@@ -289,19 +299,21 @@
       var latest = rows.slice(-5).reverse();
       var tbody = document.getElementById('btcHistoryBody');
       tbody.innerHTML = latest.map(function (r) {
-        var chgClass = Number(r.price_change_pct_24h) >= 0 ? 'chg-up' : 'chg-down';
-        var sign = Number(r.price_change_pct_24h) >= 0 ? '+' : '';
+        var chg = parseFloat(r['24h변동%']);
+        var price = parseFloat(r['가격']);
+        var chgClass = chg >= 0 ? 'chg-up' : 'chg-down';
+        var sign = chg >= 0 ? '+' : '';
         return '<tr>' +
-          '<td>' + fmtDate(r.timestamp_utc) + '</td>' +
-          '<td><span class="' + chgClass + '">' + fmtUsd(r.price_usd) + ' (' + sign + Number(r.price_change_pct_24h).toFixed(2) + '%)</span></td>' +
-          '<td>' + fmtCompact(r.perp_volume_usd_24h) + '</td>' +
-          '<td>' + r.verdict + '</td>' +
+          '<td>' + (r['기록일시(KST)'] || '') + '</td>' +
+          '<td><span class="' + chgClass + '">' + (isFinite(price) ? fmtUsd(price) : '—') + ' (' + sign + (isFinite(chg) ? chg.toFixed(2) : '—') + '%)</span></td>' +
+          '<td>' + fmtCompact(r['Notional OI(USD)']) + '<sup>*</sup></td>' +
+          '<td>' + (r['해석(자동)'] || '') + '</td>' +
         '</tr>';
       }).join('');
 
       var foot = document.getElementById('btcHistoryFootnote');
       if (foot) {
-        foot.innerHTML = '데이터 출처: <code>data/btc_derivatives.csv</code> (GitHub Actions가 매시 OKX·CoinGecko 공개 API로 자동 적재). 표는 최신 5건만 표시합니다. 거래소가 Binance에서 OKX로 바뀌며 L/S 비율은 계정/포지션/글로벌 3종 대신 단일 비율(전체 계정 기준)로 단순화되었습니다.';
+        foot.innerHTML = '<sup>*</sup> 데이터 출처: <code>data/btc_derivatives_log.csv</code> — 로컬 Python(Binance API)이 "BTC Derivatives Log" 구글시트에 적재하면, GitHub Actions가 매시 동기화하고 가격×OI 매트릭스 + L/S 계정·포지션 디버전스 기준 해석을 계산합니다. 표는 최신 5건만 표시합니다. Perp Volume 컬럼은 아직 수집되지 않아 잠정적으로 Notional OI로 표기합니다.';
       }
     })
     .catch(function () { /* 자동 수집 데이터 로드 실패 — 기존 수동 기록 유지 */ });

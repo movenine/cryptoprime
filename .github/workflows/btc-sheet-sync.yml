@@ -1,19 +1,19 @@
-name: BTC Derivatives Collector
+name: BTC Derivatives Log Sync
 
 on:
   schedule:
-    - cron: '0 * * * *'   # 매시 정각 (UTC) 실행
+    - cron: '5 * * * *'   # 매시 5분 (UTC) — 로컬 수집기 갱신 시간 여유를 둠
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: btc-derivatives-collector
+  group: btc-sheet-sync
   cancel-in-progress: false
 
 jobs:
-  collect:
+  sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,17 +24,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: 파생지표 수집 (OKX + CoinGecko)
-        run: python scripts/btc_derivatives_collector.py
+      - name: 구글시트 동기화 + 해석 계산
+        run: python scripts/btc_sheet_sync.py
 
       - name: 변경사항 커밋 & 푸시
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/btc_derivatives.csv
+          git add data/btc_derivatives_log.csv
           if git diff --cached --quiet; then
             echo "변경 없음 — 커밋 생략"
           else
-            git commit -m "chore: BTC 파생지표 자동 수집 ($(date -u +'%Y-%m-%d %H:%M UTC'))"
+            git commit -m "chore: BTC Derivatives Log 구글시트 동기화 ($(date -u +'%Y-%m-%d %H:%M UTC'))"
             git push
           fi

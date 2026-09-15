@@ -4,7 +4,99 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Macro Dashboard — Master Score Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css">
+<style>
+  .cd-wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px 20px; }
+
+  .cd-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
+  .cd-topbar .meta { font-size: 12px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
+  .cd-topbar .full-link { font-size: 12px; font-weight: 700; }
+
+  /* ── 히어로: 스코어 한눈에 ───────────────────────── */
+  .cd-hero {
+    background: linear-gradient(135deg, rgba(251,191,36,0.10), var(--card));
+    border: 1px solid var(--card-border); border-radius: 16px; padding: 24px 22px; margin-bottom: 14px;
+  }
+  .cd-hero-top { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .cd-score-num { font-size: 46px; font-weight: 800; font-family: "IBM Plex Mono", monospace; color: #fff; line-height: 1; }
+  .cd-score-num small { font-size: 18px; color: var(--text-dim); font-weight: 500; }
+  .cd-score-delta { font-size: 13px; font-weight: 700; color: var(--green); }
+  .cd-score-verdict {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700;
+    background: rgba(251,191,36,0.15); color: var(--yellow); padding: 4px 12px; border-radius: 999px;
+    margin-top: 10px;
+  }
+  .cd-score-why { font-size: 13.5px; color: var(--text-dim); margin-top: 12px; word-break: keep-all; }
+  .cd-score-why b { color: #fff; }
+
+  details.cd-more { margin-top: 10px; }
+  details.cd-more summary {
+    font-size: 12px; color: var(--accent); cursor: pointer; font-weight: 600; list-style: none;
+  }
+  details.cd-more summary::-webkit-details-marker { display: none; }
+  details.cd-more summary::before { content: "▸ "; }
+  details.cd-more[open] summary::before { content: "▾ "; }
+  details.cd-more .cd-more-body {
+    font-size: 12.5px; color: var(--text-dim); margin-top: 8px; line-height: 1.6; word-break: keep-all;
+    border-top: 1px solid var(--card-border); padding-top: 8px;
+  }
+
+  /* ── 하위 스코어 4개 (압축 pill) ───────────────────────── */
+  .cd-subscores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .cd-sub-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 8px; text-align: center; }
+  .cd-sub-card .label { font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px; }
+  .cd-sub-card .val { font-size: 16px; font-weight: 800; font-family: "IBM Plex Mono", monospace; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .cd-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+  .dot-g { background: var(--green); } .dot-y { background: var(--yellow); } .dot-r { background: var(--red); } .dot-o { background: var(--orange); }
+  @media (max-width: 480px) { .cd-subscores { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ── 경보 + 블랙스완 한 줄 ───────────────────────── */
+  .cd-row-line {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .cd-row-line .cd-row-label { font-size: 12.5px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+  .cd-row-line .cd-row-value { font-size: 12.5px; font-weight: 700; color: #fff; text-align: right; }
+  .cd-badge-mini { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .badge-red { background: rgba(248,113,113,0.15); color: var(--red); }
+  .badge-orange { background: rgba(251,146,60,0.15); color: var(--orange); }
+  .badge-green { background: rgba(52,211,153,0.15); color: var(--green); }
+
+  /* ── BTC 티저 카드 ───────────────────────── */
+  .cd-btc-teaser {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: linear-gradient(135deg, rgba(96,165,250,0.10), var(--card));
+    border: 1px solid var(--card-border); border-radius: 12px; padding: 14px 16px; margin: 14px 0;
+    text-decoration: none; color: var(--text);
+  }
+  .cd-btc-teaser:hover { border-color: var(--accent); text-decoration: none; }
+  .cd-btc-teaser .left { display: flex; align-items: center; gap: 10px; }
+  .cd-btc-teaser .icon { font-size: 22px; }
+  .cd-btc-teaser .title { font-size: 13.5px; font-weight: 700; color: #fff; }
+  .cd-btc-teaser .state { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .cd-btc-teaser .arrow { font-size: 13px; color: var(--accent); font-weight: 700; }
+  .cd-btc-teaser .hz-badge {
+    font-size: 10px; font-weight: 700; background: rgba(96,165,250,0.15); color: var(--accent);
+    padding: 2px 7px; border-radius: 999px; margin-left: 6px;
+  }
+
+  .cd-footer-strip {
+    text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--card-border);
+  }
+  .cd-footer-strip a { font-size: 13px; font-weight: 700; }
+  .cd-footer-strip .disc { font-size: 11px; color: #6b7280; margin-top: 10px; word-break: keep-all; }
+
+  /* ── 추이 차트 박스 ───────────────────────── */
+  .cd-chart-box { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px 16px 14px; margin-bottom: 14px; }
+  .cd-chart-title { font-size: 13px; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
+  .cd-chart-title .cd-chart-range { color: var(--text-dim); font-weight: 500; font-size: 11.5px; }
+  .cd-chart-canvas-wrap { position: relative; width: 100%; height: 240px; }
+  .cd-chart-legend-note { font-size: 11px; color: var(--text-dim); margin-top: 8px; }
+  .cd-chart-footnote { font-size: 11px; color: #6b7280; margin-top: 10px; word-break: keep-all; }
+  @media (max-width: 480px) { .cd-chart-canvas-wrap { height: 200px; } }
+</style>
 </head>
 <body>
 
@@ -20,613 +112,93 @@
   </ul>
 </nav>
 
-<style>
-  .gmd-wrap {
-    --bg: #0b0d12;
-    --card: #14171f;
-    --card-border: #262b38;
-    --text: #e8eaed;
-    --text-dim: #9aa1b2;
-    --green: #34d399;
-    --green-bg: rgba(52,211,153,0.12);
-    --yellow: #fbbf24;
-    --yellow-bg: rgba(251,191,36,0.12);
-    --red: #f87171;
-    --red-bg: rgba(248,113,113,0.12);
-    --orange: #fb923c;
-    --orange-bg: rgba(251,146,60,0.12);
-    --accent: #60a5fa;
-  }
-  .gmd-wrap, .gmd-wrap * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  .gmd-wrap {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-    line-height: 1.55;
-    padding: 0 0 60px 0;
-    overflow-x: hidden;
-  }
-  .gmd-wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px; }
-  @media (max-width: 560px) { .gmd-wrap { padding: 20px 14px; } }
+<div class="cd-wrap">
 
-  .date-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 13px; color: var(--text-dim);
-    background: var(--card); border: 1px solid var(--card-border);
-    padding: 6px 12px; border-radius: 20px; margin-bottom: 16px;
-  }
-  .gmd-wrap h1 { font-size: 24px; font-weight: 800; margin: 8px 0 6px 0; letter-spacing: -0.3px; }
-  @media (max-width: 560px) { .gmd-wrap h1 { font-size: 20px; } }
-  .subtitle { color: var(--text-dim); font-size: 13.5px; margin-bottom: 4px; word-break: keep-all; }
-
-  .revision-note {
-    background: linear-gradient(135deg, rgba(96,165,250,0.10), rgba(96,165,250,0.03));
-    border: 1px solid rgba(96,165,250,0.35);
-    border-radius: 12px; padding: 14px 16px; margin: 18px 0;
-    font-size: 13px; color: #cfe0fb; word-break: keep-all;
-  }
-  .revision-note b { color: #fff; }
-  .callout {
-    background: var(--card); border: 1px solid var(--card-border);
-    border-left: 3px solid var(--accent);
-    border-radius: 10px; padding: 14px 16px; margin: 16px 0;
-    font-size: 13px; color: var(--text-dim); word-break: keep-all;
-  }
-  .gmd-wrap section { margin: 34px 0; }
-  .section-title {
-    font-size: 17px; font-weight: 700; margin-bottom: 14px;
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  }
-  .badge-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 5px 12px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
-    margin-left: 4px;
-  }
-  .pill-yellow { background: var(--yellow-bg); color: var(--yellow); }
-  .pill-red { background: var(--red-bg); color: var(--red); }
-  .pill-green { background: var(--green-bg); color: var(--green); }
-  .pill-orange { background: var(--orange-bg); color: var(--orange); }
-
-  /* ── 정보 툴팁 (! 아이콘) ───────────────────────── */
-  .info-icon {
-    position: relative; display: inline-flex; align-items: center; justify-content: center;
-    width: 17px; height: 17px; border-radius: 50%;
-    background: var(--card-border); color: var(--text-dim);
-    font-size: 11px; font-weight: 700; cursor: help; margin-left: 5px; flex-shrink: 0;
-    user-select: none;
-  }
-  .info-icon .tooltip-box {
-    display: none; position: absolute; bottom: 140%; left: 50%; transform: translateX(-50%);
-    background: #1c2029; border: 1px solid var(--card-border); border-radius: 10px;
-    padding: 12px 14px; font-size: 12px; font-weight: 400; color: var(--text);
-    width: 240px; max-width: 68vw; z-index: 30; box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-    white-space: normal; line-height: 1.6; text-align: left;
-  }
-  .info-icon .tooltip-box div { display:flex; justify-content:space-between; gap:8px; padding:3px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
-  .info-icon .tooltip-box div:last-child { border-bottom: none; }
-  .info-icon:hover .tooltip-box,
-  .info-icon:focus .tooltip-box,
-  .info-icon.active .tooltip-box { display: block; }
-  .info-icon::after { content: "!"; }
-
-  .score-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  @media (max-width: 560px) { .score-grid { grid-template-columns: 1fr; } }
-  .score-card {
-    background: var(--card); border: 1px solid var(--card-border);
-    border-radius: 14px; padding: 18px;
-  }
-  .score-card.master { grid-column: 1 / -1; background: linear-gradient(135deg, rgba(251,191,36,0.08), var(--card)); }
-  .score-label { font-size: 13px; color: var(--text-dim); margin-bottom: 6px; display:flex; align-items:center; }
-  .score-value { font-size: 30px; font-weight: 800; }
-  .score-value small { font-size: 15px; font-weight: 500; color: var(--text-dim); }
-  .score-comment { font-size: 13px; color: var(--text-dim); margin-top: 8px; }
-  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; flex-shrink:0; }
-  .dot-green { background: var(--green); }
-  .dot-yellow { background: var(--yellow); }
-  .dot-red { background: var(--red); }
-  .dot-orange { background: var(--orange); }
-
-  /* ── 모바일 대응 테이블: 가로 스크롤 래퍼 ───────────────────────── */
-  .table-scroll {
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    border-radius: 12px; border: 1px solid var(--card-border);
-    background: var(--card);
-    margin: 0 -2px;
-  }
-  .gmd-wrap table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px; }
-  @media (max-width: 560px) { .gmd-wrap table { min-width: 480px; font-size: 12px; } }
-  .gmd-wrap thead th {
-    text-align: left; padding: 10px 12px; background: #1a1e28;
-    color: var(--text-dim); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px;
-    white-space: nowrap;
-  }
-  .gmd-wrap tbody td { padding: 11px 12px; border-top: 1px solid var(--card-border); vertical-align: top; }
-  .gmd-wrap tbody tr:hover { background: rgba(255,255,255,0.02); }
-  .scroll-hint { font-size: 11px; color: var(--text-dim); text-align: right; margin: 4px 2px 0 0; opacity: 0.7; }
-  .tag { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; white-space: nowrap; }
-  .highlight { color: #fff; font-weight: 600; }
-  .gmd-up-kr { color: var(--red); font-weight: 700; }
-  .gmd-down-kr { color: var(--accent); font-weight: 700; }
-  .strike { text-decoration: line-through; color: #6b7280; }
-  .new-tag {
-    display:inline-block; font-size: 10px; font-weight: 700; color: #0b0d12;
-    background: var(--accent); padding: 2px 6px; border-radius: 5px; margin-left: 6px; white-space:nowrap;
-  }
-
-  /* ── 평가의견 박스 ───────────────────────── */
-  .verdict-box {
-    margin-top: 12px; background: rgba(96,165,250,0.05); border: 1px solid rgba(96,165,250,0.25);
-    border-radius: 10px; padding: 13px 15px; font-size: 13px; color: #d7e3f7; word-break: keep-all;
-  }
-  .verdict-box .verdict-label {
-    font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.4px;
-    margin-bottom: 6px; display: block;
-  }
-
-  .flow-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
-  @media (max-width: 560px) { .flow-grid { grid-template-columns: 1fr; } }
-  .flow-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px 16px; }
-  .flow-card h4 { margin: 0 0 8px 0; font-size: 13.5px; color: var(--accent); }
-  .flow-card p { margin: 0; font-size: 13px; color: var(--text-dim); }
-
-  .crash-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 14px 0; }
-  @media (max-width: 560px) { .crash-stats { grid-template-columns: 1fr 1fr; gap:8px; } }
-  .stat-box { background: var(--card); border: 1px solid var(--red); border-radius: 10px; padding: 12px; text-align: center; }
-  .stat-box .num { font-size: 20px; font-weight: 800; color: var(--red); }
-  .stat-box .lbl { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
-
-  /* ── 포트폴리오 카드 ───────────────────────── */
-  .portfolio-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-  .pf-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px 18px; }
-  .pf-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
-  .pf-ticker { font-size: 15px; font-weight: 800; color: #fff; }
-  .pf-name { font-size: 12px; color: var(--text-dim); font-weight: 400; margin-left: 4px; }
-  .pf-status { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space:nowrap; }
-  .pf-body { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
-  .pf-body b.highlight { color: #fff; }
-
-  /* ── 한줄 브리핑 (가독성 개선) ───────────────────────── */
-  .briefing-list { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 4px 0; overflow: hidden; }
-  .briefing-item { display: flex; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--card-border); align-items: flex-start; }
-  .briefing-item:last-child { border-bottom: none; }
-  .briefing-icon { font-size: 18px; flex-shrink: 0; line-height: 1.4; }
-  .briefing-text { font-size: 14px; color: #dbe0ea; line-height: 1.65; word-break: keep-all; }
-  .briefing-text b.highlight { color: var(--yellow); font-weight: 700; }
-
-  .removed-box {
-    background: rgba(248,113,113,0.06); border: 1px dashed rgba(248,113,113,0.4);
-    border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--text-dim); margin: 16px 0; word-break: keep-all;
-  }
-  .info-note {
-    background: rgba(96,165,250,0.06); border: 1px dashed rgba(96,165,250,0.4);
-    border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--text-dim); margin: 16px 0; word-break: keep-all;
-  }
-
-  .sources { font-size: 12.5px; color: var(--text-dim); }
-  .sources a { color: var(--accent); text-decoration: none; word-break: break-all; }
-  .sources a:hover { text-decoration: underline; }
-  .sources ul { margin: 8px 0; padding-left: 18px; }
-  .sources li { margin-bottom: 8px; }
-
-  .disclaimer { font-size: 11.5px; color: #6b7280; border-top: 1px solid var(--card-border); padding-top: 16px; margin-top: 30px; word-break: keep-all; }
-  hr.divider { border: none; border-top: 1px solid var(--card-border); margin: 30px 0; }
-
-  .gmd-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--card-border); flex-wrap: wrap; }
-  .gmd-nav a { color: var(--accent); text-decoration: none; font-size: 13.5px; }
-  .gmd-nav a:hover { text-decoration: underline; }
-
-</style>
-
-<div class="gmd-wrap">
-
-  <div class="date-badge">💹 2026-09-02 (수) · v1.0</div>
-
-  <h1>📊 Macro Dashboard v1.0</h1>
-
-  <div class="callout">
-    본 업데이트는 <b>유동성 → 금리 → 신용 → 변동성 → 성장 → AI</b> 순서로 실제 시장 데이터를 재검증하여 작성했습니다.
+  <div class="cd-topbar">
+    <span class="meta">2026-09-14 (월) 18:00 KST · v1.2</span>
+    <a class="full-link" href="https://movenine.blogspot.com/" target="_blank" rel="noopener">전체 리포트 보기 →</a>
   </div>
 
-  <!-- ══════════ 오늘의 핵심 이벤트 ══════════ -->
-  <section style="margin-top:22px;">
-    <div class="section-title">🔔 오늘의 핵심 이벤트 <span class="badge-pill pill-red">9월 국채 발작 + 중동 리스크</span></div>
-    <div class="briefing-list">
-      <div class="briefing-item">
-        <div class="briefing-icon">🇰🇷</div>
-        <div class="briefing-text"><b class="highlight">코스피 -3.47% 급락</b>(6,598.25) — 미·이란 교전 재개로 위험회피 심리 확대, 국제유가·미 10년물 금리 동반 상승이 배경. 외국인·기관 동반 순매도에 최근 반도체 단기 급등 후 차익실현, ETF 리밸런싱 물량까지 겹쳤습니다.</div>
+  <!-- ══════════ 히어로 ══════════ -->
+  <div class="cd-hero">
+    <div class="cd-hero-top">
+      <div class="cd-score-num">48<small> / 100</small></div>
+      <div class="cd-score-delta">▲9</div>
+    </div>
+    <div class="cd-score-verdict">🟡 혼재·경계 모드</div>
+    <div class="cd-score-why">유동성이 <b>TGA 급감</b>으로 개선됐지만, 정작 발작의 진앙인 <b>금리 스트레스는 더 악화</b>됐습니다 (US10Y 4.95%).</div>
+
+    <details class="cd-more">
+      <summary>왜 이렇게 판정했는지 더 보기</summary>
+      <div class="cd-more-body">
+        48점은 09-07(39) 대비 9점 올랐지만, 반등의 원인이 유동성 단일 축(TGA -$84.6B)이며 금리 스트레스는 오히려 더 악화됐습니다(-2 유지, US10Y 4.77%→4.95%). 유동성 개선이 실제 위험선호 회복으로 이어지는지, 아니면 금리 레벨이 계속 발목을 잡을지가 다음 업데이트의 핵심 관전 포인트입니다.
       </div>
-      <div class="briefing-item">
-        <div class="briefing-icon">📉</div>
-        <div class="briefing-text"><b class="highlight">"9월 글로벌 국채 발작"</b> — 8/28 워시 의장의 매파적 잭슨홀 연설을 기점으로 8월 초 재무부 바이백 발표의 금리 억제 효과가 소멸됐습니다. 미 10년물 4.75~4.80%(2025년 1월래 최고), 5년물 4.50% 최초 돌파, 일본 10년물 3.00%(1996년래 최초), 프랑스 10·30년물 2008년래 최고, 독일 30년물 2011년래 최고 — <b class="highlight">Fed·BOJ·ECB 3대 중앙은행 동시 긴축 기대</b>라는 공통 배경이 확인됐습니다.</div>
-      </div>
-      <div class="briefing-item">
-        <div class="briefing-icon">🥇</div>
-        <div class="briefing-text">금(gold)이 안전자산 랠리 없이 오히려 2주 저점까지 하락 — 8월 초 대시보드가 포착했던 금 급등 랠리와 정반대 방향입니다. 전통적인 "금리 스트레스 → 금 강세" 공식이 깨지고 있어 안전자산으로서의 성격 변화를 계속 확인할 필요가 있습니다.</div>
-      </div>
-      <div class="briefing-item">
-        <div class="briefing-icon">₿</div>
-        <div class="briefing-text">BTC는 $77,516(-1.17%)로 8만 달러선을 재차 하회했습니다. Open Interest는 늘어나는데 상위 트레이더 롱/숏 비율은 오전 중 뚜렷하게 하락 — 신규 숏 유입 가능성이 있는 흐름입니다.</div>
-      </div>
-    </div>
-    <div class="verdict-box">
-      <span class="verdict-label">💬 평가의견</span>
-      오늘의 핵심은 <b style="color:#fff;">"금리 발작이 미국 단독이 아니라 G3(Fed·BOJ·ECB) 동시 긴축이라는 더 큰 그림"</b>이라는 점입니다. 8월 재무부 바이백이 만든 안도감이 워시 의장의 매파적 연설 이후 완전히 반납됐고, 여기에 중동 지정학 리스크까지 겹치며 코스피가 하루 만에 -3.47% 급락했습니다. 특히 <b style="color:#fff;">금이 안전자산 랠리 없이 오히려 하락</b>했다는 점은, 지금의 금리 상승이 "안전자산 선호"보다 "긴축 우려 자체"에 더 가깝다는 신호로 해석됩니다. "발작→안정화→반등" 사이클이 반복될 가능성은 있지만, 이번엔 되돌림을 만들 정책 카드(바이백)와 완충자금(MMF)이 이전보다 약화된 상태라는 점을 주의해야 합니다.
-    </div>
-  </section>
-
-  <!-- ══════════ 종합 판정 ══════════ -->
-  <section>
-    <div class="section-title">🎯 오늘의 종합 판정
-      <span class="badge-pill pill-green"><span class="dot dot-green"></span>완만한 리스크온 (조건부 반등)</span>
-    </div>
-    <div class="score-grid">
-      <div class="score-card master">
-        <div class="score-label">MASTER SCORE
-          <span class="info-icon" tabindex="0" onclick="this.classList.toggle('active')">
-            <span class="tooltip-box">
-              <div><span>80~100</span><span style="color:var(--green)">뚜렷한 리스크온</span></div>
-              <div><span>60~79</span><span style="color:var(--green)">완만한 리스크온</span></div>
-              <div><span>40~59</span><span style="color:var(--yellow)">혼재·경계 모드</span></div>
-              <div><span>20~39</span><span style="color:var(--orange)">리스크오프 경계</span></div>
-              <div><span>0~19</span><span style="color:var(--red)">뚜렷한 리스크오프</span></div>
-            </span>
-          </span>
-        </div>
-        <div class="score-value">34 <small>/ 100</small> <span style="font-size:13px; color:var(--red); font-weight:600;">▼7</span></div>
-        <div class="score-comment">금리 스트레스가 -1→-2로 재악화(9월 글로벌 국채 발작)하며 하락. 유동성·신용·AI는 변동 없음(0·+1·-1)</div>
-      </div>
-      <div class="score-card">
-        <div class="score-label">유동성
-          <span class="info-icon" tabindex="0" onclick="this.classList.toggle('active')">
-            <span class="tooltip-box">
-              <div><span>+2</span><span style="color:var(--green)">강한 확장</span></div>
-              <div><span>+1</span><span style="color:var(--green)">완만한 확장</span></div>
-              <div><span>0</span><span style="color:var(--yellow)">중립·혼재</span></div>
-              <div><span>-1</span><span style="color:var(--orange)">완만한 위축</span></div>
-              <div><span>-2</span><span style="color:var(--red)">강한 위축(경색 위험)</span></div>
-            </span>
-          </span>
-        </div>
-        <div class="score-value"><span class="dot dot-yellow"></span>0</div>
-        <div class="score-comment">Fed Net Liquidity 계산치 약 $5.80T. TGA는 $953.6B로 조기경보 임계값($1.0T)에 근접 — 관세 환급금(약 $166B) 마련 목적의 확충이 배경. ON RRP는 여전히 소진 상태</div>
-      </div>
-      <div class="score-card">
-        <div class="score-label">금리 스트레스
-          <span class="info-icon" tabindex="0" onclick="this.classList.toggle('active')">
-            <span class="tooltip-box">
-              <div><span>+2</span><span style="color:var(--green)">매우 우호적</span></div>
-              <div><span>+1</span><span style="color:var(--green)">우호적</span></div>
-              <div><span>0</span><span style="color:var(--yellow)">중립</span></div>
-              <div><span>-1</span><span style="color:var(--orange)">스트레스(레벨/변동성 중 하나)</span></div>
-              <div><span>-2</span><span style="color:var(--red)">심각한 스트레스(레벨+변동성 동시)</span></div>
-            </span>
-          </span>
-        </div>
-        <div class="score-value"><span class="dot dot-red"></span>-2</div>
-        <div class="score-comment"><b class="highlight">"9월 글로벌 국채 발작"</b> — 미 10년물 4.80%(2025년 1월래 최고), 5년물 4.50% 최초 돌파. 일본 10년물 3.00%(1996년래 최초), 프랑스·독일 장기물도 각각 2008·2011년래 최고. 8월 재무부 바이백이 만든 안도감이 워시 의장의 매파적 잭슨홀 연설로 완전히 소멸 — Fed·BOJ·ECB 동시 긴축 기대라는 공통 배경 확인, -1에서 -2로 재악화</div>
-      </div>
-      <div class="score-card" style="grid-column: 1 / -1;">
-        <div class="score-label">AI 사이클
-          <span class="info-icon" tabindex="0" onclick="this.classList.toggle('active')">
-            <span class="tooltip-box">
-              <div><span>+2</span><span style="color:var(--green)">강한 확장, 밸류부담 없음</span></div>
-              <div><span>+1</span><span style="color:var(--green)">확장 지속, 일부 밸류부담</span></div>
-              <div><span>0</span><span style="color:var(--yellow)">혼조(펀더멘털 vs 밸류 논쟁)</span></div>
-              <div><span>-1</span><span style="color:var(--orange)">조정 신호 확대</span></div>
-              <div><span>-2</span><span style="color:var(--red)">피크아웃 우려 본격화</span></div>
-            </span>
-          </span>
-        </div>
-        <div class="score-value"><span class="dot dot-orange"></span>-1</div>
-        <div class="score-comment">SMH(반도체 ETF) 546.80(-2.43%)로 약세, 엔비디아는 2022년 이후 최장인 7거래일 연속 하락 — 이번 주 실적에서 컨센서스 상회를 넘어선 가이던스 상향까지 요구되는 부담스러운 눈높이. 텍사스 주지사가 전력망 부담을 이유로 신규 AI 데이터센터 그리드 연계를 중단하는 등 정치적 반발도 확대 — 밸류에이션 논쟁이 정책 리스크로 번지는 단계</div>
-      </div>
-    </div>
-    <div class="verdict-box">
-      <span class="verdict-label">💬 평가의견</span>
-      34점은 <b style="color:#fff;">"리스크오프 경계"</b> 구간으로 재하락했습니다. 신용시장(HY OAS 263bp)은 여전히 타이트하고 안정적이지만, <b style="color:#fff;">금리 스트레스가 미국 단독이 아니라 Fed·BOJ·ECB 3대 중앙은행 동시 긴축이라는 더 큰 배경 위에서 재악화</b>됐습니다. 여기에 중동 지정학 리스크發 코스피 -3.47% 급락까지 겹치며 AI 사이클도 위축된 상태입니다. 8/8 저점(34) 수준까지 되돌아온 셈이라, 이번 국채 발작이 "일시적 되돌림"으로 끝날지 추가 확대될지가 다음 업데이트의 최대 관전 포인트입니다.
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ══════════ 핵심 매크로 지표 ══════════ -->
-  <section>
-    <div class="section-title">🌍 핵심 매크로 지표 <span class="badge-pill pill-green">실시간 왓치리스트 반영</span></div>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>지표</th><th>실측치 (9/2 왓치리스트)</th><th>해석</th></tr></thead>
-        <tbody>
-          <tr><td>미국 10년물 (US10Y)</td><td><span class="tag"><span class="dot dot-red"></span>4.804% (+0.17%)</span></td><td><b class="highlight">2025년 1월 이후 최고</b> — 조기경보 임계값(4.50%) 큰 폭 상회</td></tr>
-          <tr><td>미국 30년물 (US30Y)</td><td><span class="tag"><span class="dot dot-red"></span>5.279% (+0.23%)</span></td><td>19년래 최고치(5.31%, 8/17)에 재근접</td></tr>
-          <tr><td>미국 2년물 (US02Y)</td><td><span class="tag"><span class="dot dot-yellow"></span>4.400% (0.00%)</span></td><td>보합, 5년물은 4.50%를 최초로 돌파(2025년 1월래 최초)</td></tr>
-          <tr><td>일본 10년물 (JP10Y)</td><td><span class="tag"><span class="dot dot-red"></span>3.010% (+0.17%)</span></td><td><b class="highlight">3.00% 돌파 — 1996년 이후 최초</b>, 일본 5년물도 사상 최고치</td></tr>
-          <tr><td>달러 인덱스 (DXY)</td><td><span class="tag"><span class="dot dot-yellow"></span>99.763 (+0.11%)</span></td><td>완만한 강세 지속</td></tr>
-          <tr><td>MOVE Index</td><td><span class="tag"><span class="dot dot-yellow"></span>77.88 (+3.39%)</span></td><td>재상승 중, 다만 임계값(105)·장기중앙값 대비는 아직 낮음</td></tr>
-          <tr><td>VIX</td><td><span class="tag"><span class="dot dot-orange"></span>16.33 (+9.38%)</span></td><td>하루 만에 큰 폭 상승 — 중동 리스크·국채 발작 동시 반영</td></tr>
-          <tr><td>VVIX</td><td><span class="tag"><span class="dot dot-orange"></span>91.25 (+5.75%)</span></td><td>동반 상승</td></tr>
-          <tr><td>USD/JPY</td><td><span class="tag"><span class="dot dot-red"></span>160.26 (+0.06%)</span></td><td><b class="highlight">160엔대 고착</b> — 7월 미일 공조개입 이후 최약세권, 조기경보 임계값(160엔) 재충족</td></tr>
-          <tr><td>SMH (반도체 ETF)</td><td><span class="tag"><span class="dot dot-red"></span>545.22 (-2.05%)</span></td><td>중동 리스크·코스피 반도체 급락과 동조 약세</td></tr>
-          <tr><td>USOIL (WTI)</td><td><span class="tag"><span class="dot dot-yellow"></span>$90.80 (+0.12%)</span></td><td>미·이란 교전 재개로 $90대 진입</td></tr>
-          <tr><td>XAUUSD (금)</td><td><span class="tag"><span class="dot dot-orange"></span>$4,299.31 (-0.67%)</span></td><td><b class="highlight">2주 저점 — 안전자산 랠리 없이 하락</b>, 8월 초와 정반대 흐름</td></tr>
-          <tr><td>SOFR</td><td><span class="tag"><span class="dot dot-yellow"></span>3.68%</span></td><td>안정적 유지</td></tr>
-          <tr><td>IORB</td><td><span class="tag"><span class="dot dot-yellow"></span>3.65%</span></td><td>SOFR와 스프레드 정상 — 단기자금시장 스트레스 신호 없음</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="scroll-hint">← 좌우로 스크롤 →</div>
-    <div class="verdict-box">
-      <span class="verdict-label">💬 평가의견</span>
-      오늘의 핵심은 <b style="color:#fff;">금리 레벨과 변동성이 동시에 튀었다는 점</b>입니다. MOVE(+3.39%)·VIX(+9.38%)·VVIX(+5.75%) 모두 하루 만에 상승 전환하며, 그동안 반복됐던 "레벨은 높은데 변동성은 낮다"는 패턴이 깨졌습니다. 무엇보다 <b style="color:#fff;">금이 2주 저점까지 하락</b>한 점이 이례적 — 금리·지정학 리스크가 동시에 부각되는 국면에서 전통적인 안전자산 수요가 오히려 후퇴했다는 뜻이라, 이 디커플링이 일시적인지 성격 변화인지 다음 업데이트에서 반드시 재확인해야 합니다.
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ══════════ 유동성·신용 지표 ══════════ -->
-  <section>
-    <div class="section-title">💧 유동성 · 신용 지표 <span class="badge-pill pill-green">실측치</span></div>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>지표</th><th>실측치</th><th>변화</th><th>해석</th></tr></thead>
-        <tbody>
-          <tr><td>WALCL (Fed 총자산)</td><td><span class="tag"><span class="dot dot-yellow"></span>$6.73T</span></td><td style="color:var(--red);">-14.79B (-0.22%)</td><td>QT 재개 조짐 지속</td></tr>
-          <tr><td>ON RRP (RRPONTSYD)</td><td><span class="tag"><span class="dot dot-orange"></span>$725M</span></td><td style="color:var(--red);">-6B (-89.22%)</td><td>절대 규모 작아 통계적 등락 폭이 큼, 완충 탄약은 사실상 소진 상태 유지</td></tr>
-          <tr><td>TGA (WTREGEN)</td><td><span class="tag"><span class="dot dot-red"></span>$950.74B</span></td><td style="color:var(--green);">-2.88B (-0.30%)</td><td><b class="highlight">조기경보 임계값($1.0T)에 근접한 상태 지속</b></td></tr>
-          <tr><td><b class="highlight">Fed Net Liquidity (계산치)</b></td><td><b class="highlight">≈ $5.78T</b></td><td colspan="2">WALCL - RRP - TGA 기준, 직전과 유사한 수준 유지</td></tr>
-          <tr><td>HY OAS (BAMLH0A0HYM2)</td><td><span class="tag"><span class="dot dot-green"></span>2.63% (263bp)</span></td><td>보합 (+0.03)</td><td>역사적 최상위 타이트 구간 지속 — 국채 시장 발작에도 아직 전이되지 않음</td></tr>
-          <tr><td>LQD (IG 회사채 ETF)</td><td><span class="tag"><span class="dot dot-red"></span>105.22</span></td><td style="color:var(--red);">-0.99 (-0.93%)</td><td>금리 상승 영향으로 하락, 다만 신용 스프레드 자체는 안정적</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="scroll-hint">← 좌우로 스크롤 →</div>
-    <div class="verdict-box">
-      <span class="verdict-label">💬 평가의견</span>
-      TGA는 $950.74B로 임계값($1.0T) 근접 상태를 유지하고 있어 유동성 항목의 핵심 감시 포인트는 그대로입니다. HY OAS는 263bp로 보합 — 국채 시장은 발작 중이지만 신용시장은 아직 전이되지 않은 모습입니다. 상장 신용지표만 보면 안심할 수 있지만, 사모대출 부실 확대(하단 블랙스완 참고)와의 괴리는 계속 벌어지고 있습니다.
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ══════════ 블랙스완 ══════════ -->
-  <section>
-    <div class="section-title">🚨 블랙스완 / 리스크 경보</div>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>리스크</th><th>상태</th><th>근거</th></tr></thead>
-        <tbody>
-          <tr><td>G3 동시 긴축 · 국채 발작<span class="new-tag">NEW</span></td><td><span class="tag pill-red" style="padding:4px 8px;border-radius:8px;">본격화</span></td><td>Fed(워시 매파 전환)·BOJ(다카이치 내각 조기인상 지지)·ECB(9월 인상 가능성) 3대 중앙은행이 동시에 긴축 기대를 키우며 미·일·프랑스·독일 장기금리가 일제히 다년 최고치. 8월 재무부 바이백의 금리 억제 효과는 소멸</td></tr>
-          <tr><td>엔캐리 트레이드 청산</td><td><span class="tag pill-red" style="padding:4px 8px;border-radius:8px;">임박</span></td><td>USD/JPY 160엔대 고착(조기경보 임계값 재충족), 일본 10년물 3.00%(1996년래 최초)로 BOJ 인상 압력 더 커짐. 9/18 회의가 확정 이벤트 날짜</td></tr>
-          <tr><td>안전자산 디커플링<span class="new-tag">NEW</span></td><td><span class="tag pill-orange" style="padding:4px 8px;border-radius:8px;">확인 필요</span></td><td>금(XAUUSD)이 금리·지정학 리스크 동시 부각 속에서도 2주 저점까지 하락 — 8월 초 급등 랠리와 정반대. 안전자산으로서 성격 변화 여부를 다음 업데이트에서 재확인 필요</td></tr>
-          <tr><td>사모대출 시장 부실</td><td><span class="tag pill-orange" style="padding:4px 8px;border-radius:8px;">확대 중</span></td><td>상위 20개 BDC 부실채권 비중 중간값 2.0%→2.8%(1분기→2분기), 7월 디폴트 사상 최고치 — 상장 신용지표(HY OAS 263bp)와의 괴리 지속</td></tr>
-          <tr><td>지정학 리스크(중동)</td><td><span class="tag pill-red" style="padding:4px 8px;border-radius:8px;">재확전</span></td><td>미·이란 교전 재개로 WTI $90대 진입, 코스피 등 아시아 증시 위험회피 확산</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="scroll-hint">← 좌우로 스크롤 →</div>
-    <div class="verdict-box">
-      <span class="verdict-label">💬 평가의견</span>
-      이번 업데이트의 핵심은 <b style="color:#fff;">"금리 발작이 미국 단독 이슈가 아니라는 것"</b>입니다. Fed·BOJ·ECB가 동시에 긴축 신호를 보내면서 선진국 장기금리가 일제히 다년 최고치를 기록했고, 8월 재무부 바이백이 만든 안도감은 완전히 반납됐습니다. 엔캐리 청산 리스크는 "경계"에서 "임박" 단계로 격상했고, 새로 포착된 "안전자산 디커플링"(금 하락)은 이번 발작의 성격이 단순 리스크오프가 아니라 유동성/통화가치 자체에 대한 우려일 가능성을 시사합니다. 다만 "발작→안정화→반등" 패턴이 반복될 여지도 있어, 다음 업데이트에서 반등 여부를 확인하는 게 중요합니다.
-    </div>
-  </section>
-
-  <!-- ══════════ BTC 파생시장 컨텍스트 ══════════ -->
-  <section>
-    <div class="section-title">🪙 BTC 파생시장 컨텍스트 <span class="badge-pill pill-yellow">참고용·Master Score 미반영</span></div>
-    <div class="info-note">
-      아래 지표는 실시간성이 매우 높아(분 단위 변동) 신선도가 짧습니다. Master Score 산식에는 반영하지 않으며, 확정적 판정이 아닌 참고 해석으로만 활용해주세요.
-    </div>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>지표</th><th>확인값</th><th>해석 가능성</th></tr></thead>
-        <tbody>
-          <tr><td>현재가</td><td>$77,516.3 (-918.0, -1.17%)</td><td>8만 달러선 재차 하회</td></tr>
-          <tr><td>Open Interest</td><td>108,000→109,600 BTC로 꾸준히 증가</td><td>가격 하락 속 OI 증가 — 신규 숏 유입 가능성</td></tr>
-          <tr><td>상위 트레이더 롱/숏(계좌 수)</td><td>1.39 → 1.34로 급락 후 횡보</td><td>상위 트레이더 그룹의 롱 편중이 오전 중 뚜렷하게 완화</td></tr>
-          <tr><td>상위 트레이더 롱/숏(포지션 규모)</td><td>2.08 → 2.00 부근으로 급락 후 소폭 반등</td><td>포지션 기준으로도 동일한 방향 — 대형 트레이더의 숏 비중 확대로 해석 가능</td></tr>
-          <tr><td>일반 롱/숏 비율</td><td>1.27~1.28 박스권</td><td>전체 시장 기준으로는 큰 변화 없음 — 쏠림은 상위 트레이더 그룹에 국한된 모습</td></tr>
-          <tr><td>Basis (선물-현물 괴리)</td><td>0 부근~소폭 마이너스, 후반 회복</td><td>백워데이션이 완화되는 흐름 — 과도한 약세 심리는 아닌 것으로 해석 가능</td></tr>
-          <tr><td>Funding Rate</td><td>0.007995% (최근 40회 기준 등락 반복)</td><td>여전히 플러스 — 극단적 약세 펀딩은 아님, 다만 자주 급락하는 불안정한 패턴</td></tr>
-          <tr><td>OI/시가총액 비율</td><td>0.538%→0.546%로 상승</td><td>레버리지 비중이 시총 대비 커지는 추세 — 변동성 확대 시 청산 연쇄 가능성 유의</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="scroll-hint">← 좌우로 스크롤 →</div>
-    <p style="font-size:12.5px; color:var(--text-dim); margin-top:8px;">가격 하락과 OI 증가, 상위 트레이더 롱/숏 비율의 뚜렷한 하락이 함께 나타나 <b class="highlight">대형 트레이더 그룹을 중심으로 신규 숏 포지션이 유입됐을 가능성</b>이 있습니다. 다만 일반 롱/숏 비율은 큰 변화가 없고 Funding도 여전히 플러스라, 시장 전체의 방향 전환으로 단정하기보다는 일부 대형 계정의 포지션 조정으로 보는 것이 더 근거 있어 보입니다. OI/시총 비율 상승은 레버리지가 누적되고 있다는 신호라 변동성 확대 국면에서는 청산 연쇄 가능성을 함께 주시할 필요가 있습니다.</p>
-
-    <div class="verdict-box">
-      <span class="verdict-label">💬 평가의견</span>
-      5개 리스크 중 <b style="color:#fff;">"현재 진행형으로 실현된 것"은 지정학 리스크뿐</b>이었으나, <b style="color:#fff;">엔캐리 트레이드 청산 리스크는 이번 다카이치 내각 보도로 "잠재"에서 "임박"에 가까운 단계로 격상</b>됐습니다. 시장이 9/18 BOJ 회의 인상 확률을 74%로 반영하고 있다는 것은, 엔캐리 청산이 더 이상 막연한 가능성이 아니라 구체적인 날짜가 잡힌 이벤트 리스크로 바뀌었다는 뜻입니다. 1989년 이후 가장 빠른 긴축 속도가 될 수 있다는 점에서, 실제 인상이 단행될 경우 엔화 강세 전환에 따른 포지션 청산 압력이 단기간에 집중될 수 있습니다. AI 밸류에이션 재평가 리스크는 여전히 균열 후 반등 국면이며, 금 급등도 계속 지속 여부를 확인해야 할 항목입니다.
-    </div>
-  </section>
-
-  <hr class="divider">
-
-
-  <!-- ══════════ 실투자 종목 분석 ══════════ -->
-  <section>
-    <div class="section-title">💼 실투자 종목 분석 <span class="badge-pill pill-yellow">실적보고서 기반 · 요약판</span></div>
-    <div class="info-note">
-      CBRS(8/12)·SNDK(8/5)·SPCX(8/4) 실적발표 자료 기반 정보 정리이며 투자 조언이 아닙니다.
-    </div>
-
-    <div class="portfolio-grid" style="display:flex; flex-direction:column; gap:12px; margin-top:14px;">
-
-      <div class="pf-card">
-        <div class="pf-head">
-          <span><span class="pf-ticker">CBRS</span><span class="pf-name">세레브라스 · 보유 중</span></span>
-          <span class="pf-status" style="background:var(--yellow-bg); color:var(--yellow);">성장 견조·감속 신호</span>
-        </div>
-        <div class="pf-body">
-          <b class="highlight">한줄 요약</b>: Core실적은 견조(매출 2배, 손실 축소)하지만 Q3 가이던스가 전분기 대비 +2~3%에 그쳐 감속 신호. 8/19 Supernova에서 CS-4(속도 2배·전력효율 10배, 오픈AI 14배 가속 파트너십) 공개했으나 매출 반영은 다음 분기 이후.<br>
-          <b style="color:var(--green);">➕</b> 클라우드 매출 +281%YoY 예상 상회, 현금 $8.6B+RPO $25.4B 확보 · <b style="color:var(--red);">➖</b> GAAP마진 14.2%, 오픈AI 등 소수 고객 의존, 운전자본대출 $918M 신규<br>
-          <span style="color:var(--text-dim); font-size:12px;">다음 확인: Q3 실적(~11월)</span>
-        </div>
-      </div>
-
-      <div class="pf-card">
-        <div class="pf-head">
-          <span><span class="pf-ticker">SPCX</span><span class="pf-name">스페이스X · 보유 중</span></span>
-          <span class="pf-status" style="background:var(--orange-bg); color:var(--orange);">Capex 급증 확인</span>
-        </div>
-        <div class="pf-body">
-          <b class="highlight">한줄 요약</b>: 스타링크가 현금창출 엔진 역할을 하는 가운데 AI부문 EBITDA 첫 흑자전환. 다만 AI부문 분기 Capex가 $15.8B로 전분기 대비 2배·전년比 21배 폭증 — "capex 우려"가 실적으로 확인됨.<br>
-          <b style="color:var(--green);">➕</b> Connectivity 영업이익 $1.66B, 구독자 1,200만(전년比 2배), 현금 $100B · <b style="color:var(--red);">➖</b> AI부문 여전히 영업손실 $1.26B, capex는 부채로 충당, ARPU $66로 전년($85)보다 하락<br>
-          <span style="color:var(--text-dim); font-size:12px;">다음 확인: Cursor 인수($60B) Q3 종결 여부, Q3 실적(~11월)</span>
-        </div>
-      </div>
-
-      <div class="pf-card">
-        <div class="pf-head">
-          <span><span class="pf-ticker">SNDK</span><span class="pf-name">샌디스크 · 신규 검토</span></span>
-          <span class="pf-status" style="background:var(--yellow-bg); color:var(--yellow);">가격 사이클 의존</span>
-        </div>
-        <div class="pf-body">
-          <b class="highlight">한줄 요약</b>: 매출 +372%YoY, FY EPS 기준 P/E 약 20배로 성장 대비 밸류 부담은 크지 않으나, 매출총이익률이 1년 만에 26.2%→84.6%로 급등한 이유가 "물량이 아니라 가격 상승"이라는 점에서 낸드 사이클 반전 리스크를 안고 있음.<br>
-          <b style="color:var(--green);">➕</b> 데이터센터 매출 +437%YoY, NBM 선구매 계약 10건으로 경기순환성 일부 완화, 잔여 자사주매입 $15.5B · <b style="color:var(--red);">➖</b> 초고마진의 지속가능성 불확실, 사모대출 시장 스트레스 등 신용 과열 신호와 병행 관찰 필요<br>
-          <span style="color:var(--text-dim); font-size:12px;">다음 확인: FQ1'27 실적(~11월), 가이던스 $10.3~10.8B 달성 여부</span>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="verdict-box">
-      <span class="verdict-label">💬 종합 코멘트</span>
-      세 종목 모두 <b style="color:#fff;">"성장은 진짜인데 뒷받침하는 방식에 각자 다른 리스크"</b>가 있습니다 — CBRS는 감속, SPCX는 과잉 capex, SNDK는 가격 의존형 마진. 공통 분기점은 <b class="highlight">다음 분기 실적(~11월)</b>이며, 그 전까지 SPCX의 Cursor 인수 종결이 중간 체크포인트입니다.
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ══════════ KOSPI ══════════ -->
-  <section>
-    <div class="section-title">🇰🇷 KOSPI 재점검
-      <span class="badge-pill pill-red">중동 리스크 재확대</span>
-    </div>
-
-    <p style="font-size:13px; color:var(--text-dim); word-break:keep-all;">7월 코스피는 <b class="highlight">-22.19%</b> 급락(1990년 이후 최대 월간 낙폭) 이후 8월 한 달간 등락을 반복했고, <b class="highlight">9/2 다시 -3.47% 급락(6,598.25)</b>했습니다. 미·이란 교전 재개發 위험회피가 배경입니다.</p>
-
-    <div class="crash-stats">
-      <div class="stat-box"><div class="num">-22.19%</div><div class="lbl">7월 등락률</div></div>
-      <div class="stat-box" style="border-color: var(--red);"><div class="num" style="color:var(--red);">-3.47%</div><div class="lbl">9/2 하루 낙폭</div></div>
-      <div class="stat-box" style="border-color: var(--green);"><div class="num" style="color:var(--green);">+5.89%</div><div class="lbl">8/20 하루 반등(참고)</div></div>
-    </div>
-
-    <h4 style="font-size:13.5px; margin: 20px 0 8px 0; color:var(--accent);">투자 주체별 수급 (주간, 09.02 12:44 기준)</h4>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>투자자</th><th>8월 1주</th><th>8월 2주</th><th>8월 3주</th><th>8월 4주</th><th>9월 1주(진행중)</th></tr></thead>
-        <tbody>
-          <tr><td>개인</td><td class="gmd-up-kr">+9.8조</td><td class="gmd-down-kr">-8.4조</td><td class="gmd-up-kr">+3.7조</td><td class="gmd-up-kr">+4,849억</td><td class="gmd-up-kr">+2.0조</td></tr>
-          <tr><td>외국인</td><td class="gmd-down-kr">-7.1조</td><td class="gmd-up-kr">+8.0조</td><td class="gmd-down-kr">-2.1조</td><td class="gmd-down-kr">-8.2조</td><td class="gmd-down-kr">-2.9조</td></tr>
-          <tr><td>기관</td><td class="gmd-down-kr">-2.9조</td><td class="gmd-up-kr">+7,048억</td><td class="gmd-down-kr">-3.8조</td><td class="gmd-down-kr">-3,448억</td><td class="gmd-down-kr">-3.3조</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="scroll-hint">← 좌우로 스크롤 → (외국인 순매수량은 장외거래 포함)</div>
-    <p style="font-size:12.5px; color:var(--text-dim); margin-top:8px;">9월 1주차(진행 중)는 <b class="highlight">개인만 순매수(+2.0조), 외국인·기관 동반 순매도</b>(-2.9조, -3.3조)입니다. 8월 4주에 이어 2주 연속으로 외국인·기관이 함께 파는 흐름이 이어지고 있어, 최근 6주 중 가장 뚜렷하게 "쏠림"이 보이는 구간입니다.</p>
-
-    <h4 style="font-size:13.5px; margin: 24px 0 8px 0; color:var(--accent);">📥 한국시장 유동자금 유입 전망</h4>
-    <div class="flow-grid">
-      <div class="flow-card" style="border-color: rgba(52,211,153,0.3);">
-        <h4>➕ 유입 우호 요인</h4>
-        <p>WGBI(세계국채지수) 편입에 따른 채권 패시브자금 500~600억 달러 유입이 예정돼 있어 <b class="highlight">채권 자금은 구조적 유입 국면</b>입니다. 밸류업 프로그램과 MSCI 선진국지수 편입 추진도 중장기 유입 요인. 펀더멘털 측면에서는 AI 캐펙스 붐에 따른 반도체 수출이 2025년 +22%에서 2026년 +50% 이상(컨센서스)으로 가속될 전망이고, 경상수지 흑자도 GDP 대비 6.0%→6.2%로 확대될 것으로 예상됩니다. 신흥국펀드(GEM)의 현금 보유 비중이 역사적 저점(4%)이라 글로벌 액티브펀드의 추가 유입 여력도 남아있습니다.</p>
-      </div>
-      <div class="flow-card" style="border-color: rgba(248,113,113,0.3);">
-        <h4>➖ 유입 저해 요인</h4>
-        <p>주식 자금은 반도체 수출 호조에도 불구하고 <b class="highlight">단기 밸류에이션 급등 시 외국인이 적극적으로 차익실현</b>에 나서는 경향이 반복돼 왔습니다(2015~17년, 2020~21년 사례). 실제로 7월 하락장에서 외국인 수급과 지수 등락률이 거의 일치할 정도로 외국인이 방향키를 쥐고 있다는 점도 변동성 확대 요인입니다. 한은 금리인하 사이클의 조기 종료 가능성, 수출·내수 양극화(K자형 회복), 반도체 쏠림에 대한 AI 전망 불확실성도 유입을 제한할 수 있는 요인입니다.</p>
-      </div>
-    </div>
-    <p style="font-size:12.5px; color:var(--text-dim); margin-top:8px;">종합하면 <b class="highlight">채권 자금은 WGBI 편입 효과로 구조적 유입이 유력</b>하지만, <b class="highlight">주식 자금은 반도체 펀더멘털 개선과 외국인 차익실현 성향이 상충</b>하며 높은 유출입 변동성이 지속될 가능성이 큽니다. 밸류업 프로그램의 정책 의지와 가시적 성과가 외국인 매수세 지속 여부를 가르는 핵심 변수로 꼽힙니다.</p>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ══════════ 조기경보 ══════════ -->
-  <section>
-    <div class="section-title">🚨 조기경보 재검증</div>
-    <div class="table-scroll">
-      <table>
-        <thead><tr><th>경보 조건</th><th>실데이터 반영</th></tr></thead>
-        <tbody>
-          <tr><td>US10Y ≥ 4.50%</td><td><span class="dot dot-red"></span><b class="highlight">충족 (4.804%, 2025년 1월래 최고)</b></td></tr>
-          <tr><td>MOVE ≥ 105</td><td><span class="dot dot-yellow"></span>미충족(77.88), 다만 3.39% 상승하며 재상승 전환</td></tr>
-          <tr><td>USD/JPY ≥ 160엔<span class="new-tag">NEW</span></td><td><span class="dot dot-red"></span><b class="highlight">충족 (160.26엔)</b> — 7월 미일 공조개입 이후 최약세권</td></tr>
-          <tr><td>SMH 20일선 이탈</td><td><span class="dot dot-orange"></span>545.22(-2.05%)로 약세 지속 — 이탈 여부 재확인 필요</td></tr>
-          <tr><td>NVDA 50일선 이탈</td><td><span class="dot dot-orange"></span>재확인 필요</td></tr>
-          <tr><td>BTC 100일선 이탈</td><td><span class="dot dot-orange"></span>$77,516까지 하락, 재확인 필요</td></tr>
-          <tr><td>KOSPI 월간 -20%+</td><td><span class="dot dot-red"></span><b class="highlight">7월 실제 충족 (-22.19%)</b>, 9/2 -3.47% 재하락</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="scroll-hint">← 좌우로 스크롤 →</div>
-    <p style="font-size:13px; margin-top:10px; word-break:keep-all;">현재 위험 경보 활성화: <b class="highlight" style="color:var(--red);">3개 (US10Y, USD/JPY, KOSPI)</b></p>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ══════════ 한줄 브리핑 (카드형 재구성) ══════════ -->
-  <section>
-    <div class="section-title">🧠 2026-09-02 브리핑</div>
-    <div class="briefing-list">
-      <div class="briefing-item">
-        <div class="briefing-icon">📉</div>
-        <div class="briefing-text"><b class="highlight">9월 글로벌 국채 발작</b> — 미 10년물 4.80%(2025년 1월래 최고), 일본 10년물 3.00%(1996년래 최초). Fed·BOJ·ECB 동시 긴축 기대가 배경입니다.</div>
-      </div>
-      <div class="briefing-item">
-        <div class="briefing-icon">🇰🇷</div>
-        <div class="briefing-text">코스피 -3.47% 급락(6,598.25) — 중동 리스크 재확전, 외국인·기관 동반 순매도가 배경입니다.</div>
-      </div>
-      <div class="briefing-item">
-        <div class="briefing-icon">🥇</div>
-        <div class="briefing-text">금이 2주 저점까지 하락 — 안전자산 랠리 없이 오히려 내렸다는 점이 이례적입니다.</div>
-      </div>
-      <div class="briefing-item">
-        <div class="briefing-icon">₿</div>
-        <div class="briefing-text">BTC $77,516(-1.17%) — 상위 트레이더 그룹 중심으로 신규 숏 유입 가능성이 관찰됩니다.</div>
-      </div>
-      <div class="briefing-item">
-        <div class="briefing-icon">✅</div>
-        <div class="briefing-text"><b class="highlight">결론</b>: 금리·지정학 리스크가 동시에 부각되는데 안전자산(금)이 오히려 하락하는 디커플링이 핵심 관찰 포인트입니다. MASTER SCORE는 8/8 저점 수준(34)까지 재하락했습니다.</div>
-      </div>
-    </div>
-  </section>
-
-  <hr class="divider">
-
-  <!-- ══════════ 출처 ══════════ -->
-  <section class="sources">
-    <div class="section-title" style="font-size:15px;">출처</div>
-    <ul>
-      <li><a href="https://fred.stlouisfed.org/series/DGS10" target="_blank">FRED — US10Y (DGS10)</a></li>
-      <li><a href="https://fred.stlouisfed.org/series/BAMLH0A0HYM2" target="_blank">FRED — HY OAS (BAMLH0A0HYM2)</a></li>
-      <li><a href="https://www.gurufocus.com/economic_indicators/6168/fed-net-liquidity" target="_blank">GuruFocus — Fed Net Liquidity</a></li>
-      <li><a href="https://www.gurufocus.com/news/9029667/cerebras-systems-cbrs-reports-q2-earnings-shares-plummet-16" target="_blank">GuruFocus — CBRS 2분기 실적, 매출 하회 (2026.8.12)</a> · <a href="https://www.proactiveinvestors.com/companies/news/1097021/cerebras-stock-falls-on-earnings-disappointment-despite-guidance-raise-1097021.html" target="_blank">Proactive Investors — CBRS 실적 상세</a></li>
-      <li><a href="https://financefeeds.com/sandisk-investor-day-sndk-what-to-watch/" target="_blank">FinanceFeeds — SNDK Investor Day 프리뷰</a> · <a href="https://stocksdownunder.com/sandisk-ai-chip-stock-soaring-investor-day/" target="_blank">Stocks Down Under — SNDK 신제품 발표</a></li>
-      <li><a href="https://www.investing.com/equities/spacex" target="_blank">Investing.com — SPCX 주가</a> · <a href="https://www.cnn.com/markets/stocks/SPCX" target="_blank">CNN — SPCX</a></li>
-      <li><a href="https://www.etoday.co.kr/news/view/2610019" target="_blank">이투데이</a> · <a href="https://www.hankookilbo.com/news/article/A2026080211080002205" target="_blank">한국일보</a> — 코스피 7월 -22% 급락</li>
-      <li>로이터 ROI 칼럼 — Mike Dolan "Morning Bid: September storm" (2026.9.1), Jamie McGeever "TRADING DAY" 시리즈 3편 (2026.8.31~9.1), Deborah Cunningham 칼럼 — 9월 글로벌 국채 발작·G3 동시긴축 관련</li>
-      <li>연준 — 케빈 워시 의장 잭슨홀 경제정책 심포지엄 연설문 요약 (2026.8.28)</li>
-      <li>로이터 — BIS 총재 스테이블코인 관련 발언 보도, 잭슨홀 (2026.8.28)</li>
-      <li>베센트 재무장관 — 워런 상원의원 대상 엔화 거래·외환안정기금 관련 서한 (2026.8.27)</li>
-      <li>파이낸셜타임스 — 사모대출 시장 스트레스 확대 보도 (2026.8.24, 솔브 데이터 분석 인용)</li>
-      <li><a href="https://eiec.kdi.re.kr/policy/domesticView.do?ac=0000201987" target="_blank">KDI 경제교육·정보센터</a> · <a href="https://www.kcif.or.kr/finance/financeView?rpt_no=36587" target="_blank">국제금융센터(KCIF)</a> — 외국인 국내 증권투자자금 여건 및 전망</li>
-      <li>Cerebras Systems Inc. — 2026년 2분기 실적발표 프레스릴리스 (2026.8.12, 회사 제공 자료) · Supernova 2026 이벤트 회의록 (2026.8.19, 회사 제공 자료)</li>
-      <li>Sandisk Corporation — FY2026 4분기 실적발표 (Exhibit 99.1, 2026.8.5, 회사 제공 자료)</li>
-      <li>Space Exploration Technologies Corp. — 2026년 2분기 실적발표 (2026.8.4, 회사 제공 자료)</li>
-    </ul>
-  </section>
-
-  <div class="disclaimer">
-    본 대시보드는 정보 제공 목적으로 작성되었으며, 특정 종목·자산에 대한 매수·매도 추천이나 투자 자문이 아닙니다. "MASTER SCORE" 등 스코어링은 공인된 지수가 아니라 필자가 임의로 산정한 주관적 지표이며, 각 스코어카드의 ! 툴팁에 표시된 단계 구분 역시 공인 기준이 아닌 자체 설정 기준입니다. 실시간 시세 지표는 2026년 9월 2일 확인 기준이며, 잭슨홀 연설·로이터 ROI 칼럼 등 뉴스성 자료는 2026년 8월 27일~9월 1일 발행분, CBRS Supernova 자료는 2026년 8월 19일, CBRS·SNDK·SPCX 실적 데이터는 각사 공식 실적발표 자료(8/12, 8/5, 8/4) 기준입니다. "BTC 파생시장 컨텍스트", "실투자 종목 분석", "한국시장 유동자금 유입 전망" 섹션은 투자 조언이 아닌 정보 제공 목적이며, 필자는 금융투자업 인가를 받은 법인이나 개인이 아닙니다. 시장 데이터는 실시간으로 변동하므로, 실제 투자 판단 시에는 반드시 거래소·공식 공시자료를 통해 최신 수치를 재확인하시기 바랍니다. 본 자료로 인해 발생하는 투자 손실에 대해 책임지지 않으며, 최종 투자 판단과 책임은 투자자 본인에게 있습니다.
+    </details>
   </div>
 
-
-  <div class="gmd-nav">
-    <a href="https://movenine.blogspot.com/2026/08/Macro%20Dashboard%20v1.0_03146262.html">← 이전 대시보드 (2026-08-29)</a>
+  <!-- ══════════ 하위 스코어 4개 ══════════ -->
+  <div class="cd-subscores">
+    <div class="cd-sub-card"><div class="label">유동성</div><div class="val"><span class="cd-dot dot-g"></span>+1</div></div>
+    <div class="cd-sub-card"><div class="label">금리스트레스</div><div class="val"><span class="cd-dot dot-r"></span>-2</div></div>
+    <div class="cd-sub-card"><div class="label">신용</div><div class="val"><span class="cd-dot dot-g"></span>+1</div></div>
+    <div class="cd-sub-card"><div class="label">AI 사이클</div><div class="val"><span class="cd-dot dot-y"></span>0</div></div>
   </div>
 
+  <!-- ══════════ 추이 차트 (중간 삽입) ══════════ -->
+  <div class="cd-chart-box">
+    <div class="cd-chart-title">📈 Master Score 추이 <span class="cd-chart-range">(08-08 ~ 09-14)</span></div>
+    <div class="cd-chart-canvas-wrap"><canvas id="cdComboChart"></canvas></div>
+    <div class="cd-chart-legend-note">그래프 위에 마우스를 올리면 해당 시점의 5개 스코어가 함께 표시됩니다.</div>
+
+    <div class="cd-score-why" style="margin-top:12px;">지난 5주간 34~51 사이 등락을 반복하다 <b>09-14 유동성 개선(TGA -$84.6B)</b>으로 48까지 반등했습니다. <b>신용 축은 그 사이 단 한 번도 변하지 않았습니다.</b></div>
+    <details class="cd-more">
+      <summary>추이 해설 더 보기</summary>
+      <div class="cd-more-body">
+        09-02 "9월 글로벌 국채 발작"으로 34까지 재하락했던 스코어는 09-07 AI 사이클 개선(반도체 업종 회복, -1→0)으로 39까지 반등했고, 09-14에는 TGA 급감에 따른 유동성 개선(0→+1)이 더해지며 48까지 올라왔습니다. 다만 금리 스트레스는 09-02 이후 -2에서 벗어나지 못했고 실제 US10Y는 4.77%→4.95%로 계속 악화 중입니다. 신용(HY OAS 265~272bp)은 10회 연속 무변동으로, 가중치를 20%→15%로 낮춘 근거이기도 합니다.
+      </div>
+    </details>
+    <div class="cd-chart-footnote">데이터 출처: <code>data/score_history.md</code> (GitHub 저장소 원본, 0-12 규칙 — 매 갱신 시 이 파일을 직접 읽어 반영합니다)</div>
+  </div>
+
+  <!-- ══════════ 조기경보 한 줄 ══════════ -->
+  <div class="cd-row-line">
+    <span class="cd-row-label">🚨 조기경보</span>
+    <span class="cd-row-value">
+      <span class="cd-badge-mini badge-red">🔴 1 US10Y</span>
+      <span class="cd-badge-mini badge-orange">🟠 1 USD/JPY</span>
+    </span>
+  </div>
+
+  <!-- ══════════ 블랙스완 한 줄 ══════════ -->
+  <div class="cd-row-line">
+    <span class="cd-row-label">🦢 블랙스완</span>
+    <span class="cd-row-value">국채 발작 지속 · 엔캐리 청산 "임박"(BOJ 9/18) · 코스피 재하락</span>
+  </div>
+
+  <!-- ══════════ KOSPI 한 줄 ══════════ -->
+  <div class="cd-row-line">
+    <span class="cd-row-label">🇰🇷 KOSPI</span>
+    <span class="cd-row-value">사상 최고치권 → 3거래일만에 재하락 (-2.6%)</span>
+  </div>
+
+  <!-- ══════════ BTC 티저 ══════════ -->
+  <a class="cd-btc-teaser" href="btc.html">
+    <div class="left">
+      <div class="icon">🪙</div>
+      <div>
+        <div class="title">BTC 파생시장 <span class="hz-badge">1H</span></div>
+        <div class="state">롱 쏠림 심화 · 백워데이션 유지</div>
+      </div>
+    </div>
+    <div class="arrow">자세히 →</div>
+  </a>
+
+  <div class="cd-footer-strip">
+    <a href="https://movenine.blogspot.com/" target="_blank" rel="noopener">평가의견 전문 · 핵심 매크로 지표 전체 보기 →</a>
+    <div class="disc">⚠️ 참고용 정보 제공이며 투자 권유·자문이 아닙니다. Master Score는 자체 산정 주관적 지표입니다.</div>
+  </div>
 </div>
+
 <footer class="site-footer">
   <div>© <span id="year"></span> Master Score Lab. 본 자료는 정보 제공 목적으로 작성되었으며 투자 자문이 아닙니다.</div>
   <div class="links">
@@ -637,5 +209,71 @@
   </div>
 </footer>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+(function(){
+  var gridColor = 'rgba(255,255,255,0.05)';
+  var tickStyle = { color: '#9aa1b2', font: { size: 10.5 } };
+  var labels = ['08-08','08-13','08-14','08-18','08-18b','08-25','08-29','09-02','09-07','09-14'];
+
+  function ds(label, data, color, isMaster) {
+    return {
+      label: label,
+      data: data,
+      borderColor: color,
+      backgroundColor: isMaster ? 'rgba(255,255,255,0.06)' : 'transparent',
+      borderWidth: isMaster ? 2 : 1.25,
+      borderCapStyle: 'round',
+      borderJoinStyle: 'round',
+      fill: isMaster ? 'origin' : false,
+      tension: 0.4,
+      cubicInterpolationMode: 'monotone',
+      pointRadius: isMaster ? 2.5 : 2,
+      pointHoverRadius: isMaster ? 6 : 5,
+      pointBackgroundColor: color,
+      pointBorderColor: '#14171f',
+      pointBorderWidth: 1.5,
+      pointHoverBorderWidth: 2
+    };
+  }
+
+  new Chart(document.getElementById('cdComboChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        ds('Master', [34,51,51,43,39,41,41,34,39,48], '#ffffff', true),
+        ds('유동성', [50,50,50,25,50,50,50,50,50,75], '#fbbf24'),
+        ds('금리', [0,25,25,25,0,25,25,0,0,0], '#f87171'),
+        ds('신용', [75,75,75,75,75,75,75,75,75,75], '#34d399'),
+        ds('AI', [25,75,75,75,50,25,25,25,50,50], '#60a5fa')
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true, position: 'top', align: 'end',
+          labels: { color: '#c7cbd6', font: { size: 10.5 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, padding: 12 }
+        },
+        tooltip: {
+          mode: 'index', intersect: false,
+          backgroundColor: '#0b0d12', borderColor: '#262b38', borderWidth: 1,
+          titleColor: '#e8eaed', bodyColor: '#c7cbd6',
+          padding: 10, cornerRadius: 8, displayColors: true, boxPadding: 4,
+          titleFont: { size: 11.5, weight: '700' }, bodyFont: { size: 11.5 }
+        }
+      },
+      scales: {
+        y: { min: 0, max: 100, grid: { color: gridColor, drawTicks: false }, border: { display: false }, ticks: tickStyle },
+        x: { grid: { display: false }, border: { display: false }, ticks: tickStyle }
+      }
+    }
+  });
+})();
+</script>
 </body>
 </html>

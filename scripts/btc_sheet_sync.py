@@ -63,11 +63,14 @@ def fetch_csv_rows():
             final_url, text = _try_fetch(url)
             print(f"성공: {url} -> {final_url} ({len(text)} bytes)")
             reader = csv.DictReader(io.StringIO(text))
-            rows = list(reader)
+            # 시트 서식이 데이터 범위보다 넓게 걸려 있으면 빈 헤더(무명) 열이 섞여
+            # 나오므로 제거한다 — 실 데이터 열만 남긴다.
+            fieldnames = [f for f in reader.fieldnames if f]
+            rows = [{k: v for k, v in row.items() if k} for row in reader]
             if not rows:
                 print(f"경고: {url} 응답에 데이터 행이 없음, 다음 후보 시도")
                 continue
-            return rows, reader.fieldnames
+            return rows, fieldnames
         except urllib.error.HTTPError as e:
             body = e.read(500).decode("utf-8", "replace")
             print(f"실패: {url} -> HTTP {e.code} {e.reason}\n응답 본문(앞 500자): {body}")

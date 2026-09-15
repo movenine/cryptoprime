@@ -6,8 +6,7 @@
 <title>BTC Derivatives Flow Radar — Master Score Lab</title>
 <link rel="stylesheet" href="assets/site.css">
 <style>
-  /* 이 페이지만 더 넓은 폭 사용 (차트 2~3열 배치를 위해) */
-  .btc-wide-wrap { max-width: 1120px; margin: 0 auto; padding: 32px 20px 20px; }
+  .btc-wide-wrap { max-width: 880px; margin: 0 auto; padding: 32px 20px 20px; }
   .btc-wide-wrap h1 { font-size: 21px; font-weight: 800; margin: 0 0 4px; }
   .btc-top-meta { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
   .btc-disclaimer-top { font-size: 12px; color: #6b7280; margin-bottom: 26px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border); word-break: keep-all; }
@@ -18,26 +17,24 @@
   }
   .btc-section-label:first-of-type { margin-top: 0; }
 
-  /* ── 1. 히스토리 (상단 배치) ───────────────────────── */
-  .btc-history-list { display: flex; flex-direction: column; gap: 8px; }
-  .btc-history-item {
-    background: var(--card); border: 1px solid var(--card-border); border-radius: 12px;
-    padding: 14px 16px;
+  /* ── 1. 히스토리 (상단 배치, 한줄 요약 테이블) ───────────────────────── */
+  .table-scroll {
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    border-radius: 12px; border: 1px solid var(--card-border); background: var(--card);
   }
-  .btc-history-head {
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
-    margin-bottom: 8px;
+  .btc-history-table { width: 100%; min-width: 480px; border-collapse: collapse; font-size: 12.5px; }
+  .btc-history-table thead th {
+    text-align: left; padding: 10px 12px; background: #1a1e28;
+    color: var(--text-dim); font-weight: 600; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.3px; white-space: nowrap;
   }
-  .btc-history-date { font-size: 12px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
-  .btc-history-price { font-size: 14px; font-weight: 700; color: #fff; }
-  .btc-history-price .chg-up { color: var(--green); }
-  .btc-history-price .chg-down { color: var(--red); }
-  .btc-verdict-pill {
-    display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
-    background: rgba(96,165,250,0.15); color: var(--accent); margin-bottom: 8px;
+  .btc-history-table tbody td {
+    padding: 10px 12px; border-top: 1px solid var(--card-border); vertical-align: top;
+    font-family: "IBM Plex Mono", monospace; white-space: nowrap;
   }
-  .btc-history-notes { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-dim); line-height: 1.6; }
-  .btc-history-notes li { margin-bottom: 2px; word-break: keep-all; }
+  .btc-history-table tbody td:last-child { font-family: inherit; color: var(--text-dim); white-space: normal; word-break: keep-all; }
+  .chg-up { color: var(--green); font-weight: 700; }
+  .chg-down { color: var(--red); font-weight: 700; }
   .btc-history-footnote { font-size: 11.5px; color: #6b7280; margin-top: 10px; word-break: keep-all; }
 
   /* ── 2. 상태 박스 ───────────────────────── */
@@ -83,9 +80,8 @@
   .summary-card .value { font-size: 17px; font-weight: 800; color: #fff; font-family: "IBM Plex Mono", monospace; }
   @media (max-width: 560px) { .summary-grid { grid-template-columns: 1fr; } }
 
-  /* ── 3. 차트 그리드 (2~3열) ───────────────────────── */
-  .chart-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  @media (max-width: 900px) { .chart-grid { grid-template-columns: repeat(2, 1fr); } }
+  /* ── 3. 차트 그리드 (2열) ───────────────────────── */
+  .chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
   @media (max-width: 560px) { .chart-grid { grid-template-columns: 1fr; } }
   .chart-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 14px; }
   .chart-card .chart-title {
@@ -127,39 +123,31 @@
   <div class="btc-top-meta">최신 실측 기록: 2026-09-03 21:25 (KST 추정) · Google Sheets 자동 수집 · 전 항목 실측</div>
   <div class="btc-disclaimer-top">⚠️ 본 페이지는 참고용 정보 제공이며 투자 권유·자문이 아닙니다. 아래 상태 판정은 확정적 결론이 아닌 "가능성" 해석입니다.</div>
 
-  <!-- ══════════ 1. 히스토리 (상단 배치) ══════════ -->
-  <div class="btc-section-label">📜 최근 기록 (최대 10건)</div>
-  <div class="btc-history-list">
-
-    <div class="btc-history-item">
-      <div class="btc-history-head">
-        <span class="btc-history-date">2026-09-03 · 19:00–21:25 (KST 추정)</span>
-        <span class="btc-history-price">$78,005 <span class="chg-up">(+0.57%)</span></span>
-      </div>
-      <span class="btc-verdict-pill">신규 포지션 유입 가능성</span>
-      <ul class="btc-history-notes">
-        <li>가격·OI 동반 상승(8,266.5M → 8,369.0M, 신고점) — 직전 구간의 "숏커버링" 가설보다 신규 유입 쪽에 무게</li>
-        <li>다만 후반부 Accounts·Positions·Global L/S 3개 지표가 모두 숏 비중 재확대 — 상승 중 신규 숏 진입 또는 롱 청산 동반 가능성</li>
-        <li>Funding은 낮은 수준 유지 — 롱 과열 신호는 아님</li>
-      </ul>
-    </div>
-
-    <div class="btc-history-item">
-      <div class="btc-history-head">
-        <span class="btc-history-date">2026-09-03 · ~18:00 구간 (타임존 미확인)</span>
-        <span class="btc-history-price">$77,841.6 <span class="chg-up">(+1.10%)</span></span>
-      </div>
-      <span class="btc-verdict-pill">숏커버링형 반등 가능성</span>
-      <ul class="btc-history-notes">
-        <li>가격 ▲ + OI ▼ 조합 — 신규 유입보다 숏 포지션 정리에 가까운 패턴</li>
-        <li>계정 L/S ▼ vs 포지션 L/S ▲ 디버전스 — "소액계정 숏 vs 대형계정 롱" 구도 가능성</li>
-        <li>레버리지 과열 신호 없음</li>
-      </ul>
-    </div>
-
-    <div class="btc-history-footnote">
-      현재 누적 기록은 2건입니다(2026-09-03 최초 수집 시작). 자동 수집 파이프라인이 가동되면 최근 10건까지 자동으로 채워지며, 10건 초과 시 오래된 순으로 표에서 제외됩니다(전체 로그는 <code>BTC_Derivatives_History.md</code>에 계속 누적 보존).
-    </div>
+  <!-- ══════════ 1. 히스토리 (상단 배치, 최근 5건 한줄 요약) ══════════ -->
+  <div class="btc-section-label">📜 최근 기록 (최근 5건)</div>
+  <div class="table-scroll">
+    <table class="btc-history-table">
+      <thead>
+        <tr><th>날짜</th><th>가격변동</th><th>Perp Volume</th><th>해석</th></tr>
+      </thead>
+      <tbody id="btcHistoryBody">
+        <tr>
+          <td>09-03 21:25</td>
+          <td><span class="chg-up">$78,005 (+0.57%)</span></td>
+          <td>Notional OI $8.37B<sup>*</sup></td>
+          <td>신규 포지션 유입 가능성 — 가격·OI 동반 상승, 다만 후반부 L/S 3개 지표 숏 비중 재확대</td>
+        </tr>
+        <tr>
+          <td>09-03 18:00</td>
+          <td><span class="chg-up">$77,841.6 (+1.10%)</span></td>
+          <td>—</td>
+          <td>숏커버링형 반등 가능성 — 가격▲+OI▼ 조합, 계정/포지션 L/S 디버전스</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="btc-history-footnote" id="btcHistoryFootnote">
+    <sup>*</sup> 위 2건은 2026-09-03 수동 수집분입니다. 로컬 Python이 Binance API로 "BTC Derivatives Log" 구글시트에 계속 적재하면, GitHub Actions가 매시 그 시트를 <code>data/btc_derivatives_log.csv</code>로 동기화하고 가격×OI 매트릭스 + L/S 계정·포지션 디버전스 기준 해석을 계산합니다. 이 표는 그 파일의 최신 5건을 자동으로 불러와 표시합니다(불러오기 실패 시 위 수동 기록이 유지됩니다). Perp Volume 컬럼은 아직 수집되지 않아 잠정적으로 Notional OI로 표기합니다.
   </div>
 
   <!-- ══════════ 2. 상태 박스 ══════════ -->
@@ -264,5 +252,72 @@
   </div>
 </footer>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script>
+(function () {
+  function fmtUsd(n) {
+    return '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
+  function fmtCompact(n) {
+    n = Number(n);
+    if (!isFinite(n)) return '—';
+    if (Math.abs(n) >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+    if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+    return fmtUsd(n);
+  }
+  // 따옴표로 감싼 필드(콤마·줄바꿈 포함 가능)를 지원하는 최소 CSV 파서
+  function parseCsv(text) {
+    var rows = [], row = [], field = '', inQuotes = false;
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      if (inQuotes) {
+        if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; } }
+        else { field += c; }
+      } else if (c === '"') { inQuotes = true; }
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else { field += c; }
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    if (rows.length < 2) return [];
+    var headers = rows[0];
+    return rows.slice(1)
+      .filter(function (r) { return r.length === headers.length && r.some(function (x) { return x !== ''; }); })
+      .map(function (r) {
+        var obj = {};
+        headers.forEach(function (h, i) { obj[h] = r[i]; });
+        return obj;
+      });
+  }
+
+  fetch('data/btc_derivatives_log.csv', { cache: 'no-store' })
+    .then(function (res) { if (!res.ok) throw new Error('fetch failed'); return res.text(); })
+    .then(function (text) {
+      var rows = parseCsv(text);
+      if (rows.length === 0) return; // 자동 수집 데이터 없음 — 기존 수동 기록 유지
+
+      var latest = rows.slice(-5).reverse();
+      var tbody = document.getElementById('btcHistoryBody');
+      tbody.innerHTML = latest.map(function (r) {
+        var chg = parseFloat(r['24h변동%']);
+        var price = parseFloat(r['가격']);
+        var chgClass = chg >= 0 ? 'chg-up' : 'chg-down';
+        var sign = chg >= 0 ? '+' : '';
+        return '<tr>' +
+          '<td>' + (r['기록일시(KST)'] || '') + '</td>' +
+          '<td><span class="' + chgClass + '">' + (isFinite(price) ? fmtUsd(price) : '—') + ' (' + sign + (isFinite(chg) ? chg.toFixed(2) : '—') + '%)</span></td>' +
+          '<td>' + fmtCompact(r['Notional OI(USD)']) + '<sup>*</sup></td>' +
+          '<td>' + (r['해석(자동)'] || '') + '</td>' +
+        '</tr>';
+      }).join('');
+
+      var foot = document.getElementById('btcHistoryFootnote');
+      if (foot) {
+        foot.innerHTML = '<sup>*</sup> 데이터 출처: <code>data/btc_derivatives_log.csv</code> — 로컬 Python(Binance API)이 "BTC Derivatives Log" 구글시트에 적재하면, GitHub Actions가 매시 동기화하고 가격×OI 매트릭스 + L/S 계정·포지션 디버전스 기준 해석을 계산합니다. 표는 최신 5건만 표시합니다. Perp Volume 컬럼은 아직 수집되지 않아 잠정적으로 Notional OI로 표기합니다.';
+      }
+    })
+    .catch(function () { /* 자동 수집 데이터 로드 실패 — 기존 수동 기록 유지 */ });
+})();
+</script>
 </body>
 </html>

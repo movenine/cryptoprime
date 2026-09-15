@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[초안] Macro Dashboard — 축약형 · Master Score Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .cd-wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px 20px; }
+
+  .cd-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 8px; }
+  .cd-topbar .meta { font-size: 12px; color: var(--text-dim); font-family: "IBM Plex Mono", monospace; }
+  .cd-topbar .full-link { font-size: 12px; font-weight: 700; }
+
+  /* ── 히어로: 스코어 한눈에 ───────────────────────── */
+  .cd-hero {
+    background: linear-gradient(135deg, rgba(251,191,36,0.10), var(--card));
+    border: 1px solid var(--card-border); border-radius: 16px; padding: 24px 22px; margin-bottom: 14px;
+  }
+  .cd-hero-top { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .cd-score-num { font-size: 46px; font-weight: 800; font-family: "IBM Plex Mono", monospace; color: #fff; line-height: 1; }
+  .cd-score-num small { font-size: 18px; color: var(--text-dim); font-weight: 500; }
+  .cd-score-delta { font-size: 13px; font-weight: 700; color: var(--green); }
+  .cd-score-verdict {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700;
+    background: rgba(251,191,36,0.15); color: var(--yellow); padding: 4px 12px; border-radius: 999px;
+    margin-top: 10px;
+  }
+  .cd-score-why { font-size: 13.5px; color: var(--text-dim); margin-top: 12px; word-break: keep-all; }
+  .cd-score-why b { color: #fff; }
+
+  details.cd-more { margin-top: 10px; }
+  details.cd-more summary {
+    font-size: 12px; color: var(--accent); cursor: pointer; font-weight: 600; list-style: none;
+  }
+  details.cd-more summary::-webkit-details-marker { display: none; }
+  details.cd-more summary::before { content: "▸ "; }
+  details.cd-more[open] summary::before { content: "▾ "; }
+  details.cd-more .cd-more-body {
+    font-size: 12.5px; color: var(--text-dim); margin-top: 8px; line-height: 1.6; word-break: keep-all;
+    border-top: 1px solid var(--card-border); padding-top: 8px;
+  }
+
+  /* ── 하위 스코어 4개 (압축 pill) ───────────────────────── */
+  .cd-subscores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .cd-sub-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 8px; text-align: center; }
+  .cd-sub-card .label { font-size: 10.5px; color: var(--text-dim); margin-bottom: 4px; }
+  .cd-sub-card .val { font-size: 16px; font-weight: 800; font-family: "IBM Plex Mono", monospace; display: flex; align-items: center; justify-content: center; gap: 4px; }
+  .cd-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+  .dot-g { background: var(--green); } .dot-y { background: var(--yellow); } .dot-r { background: var(--red); } .dot-o { background: var(--orange); }
+  @media (max-width: 480px) { .cd-subscores { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ── 경보 + 블랙스완 한 줄 ───────────────────────── */
+  .cd-row-line {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .cd-row-line .cd-row-label { font-size: 12.5px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+  .cd-row-line .cd-row-value { font-size: 12.5px; font-weight: 700; color: #fff; text-align: right; }
+  .cd-badge-mini { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .badge-red { background: rgba(248,113,113,0.15); color: var(--red); }
+  .badge-orange { background: rgba(251,146,60,0.15); color: var(--orange); }
+  .badge-green { background: rgba(52,211,153,0.15); color: var(--green); }
+
+  /* ── BTC 티저 카드 ───────────────────────── */
+  .cd-btc-teaser {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: linear-gradient(135deg, rgba(96,165,250,0.10), var(--card));
+    border: 1px solid var(--card-border); border-radius: 12px; padding: 14px 16px; margin: 14px 0;
+    text-decoration: none; color: var(--text);
+  }
+  .cd-btc-teaser:hover { border-color: var(--accent); text-decoration: none; }
+  .cd-btc-teaser .left { display: flex; align-items: center; gap: 10px; }
+  .cd-btc-teaser .icon { font-size: 22px; }
+  .cd-btc-teaser .title { font-size: 13.5px; font-weight: 700; color: #fff; }
+  .cd-btc-teaser .state { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .cd-btc-teaser .arrow { font-size: 13px; color: var(--accent); font-weight: 700; }
+  .cd-btc-teaser .hz-badge {
+    font-size: 10px; font-weight: 700; background: rgba(96,165,250,0.15); color: var(--accent);
+    padding: 2px 7px; border-radius: 999px; margin-left: 6px;
+  }
+
+  .cd-footer-strip {
+    text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--card-border);
+  }
+  .cd-footer-strip a { font-size: 13px; font-weight: 700; }
+  .cd-footer-strip .disc { font-size: 11px; color: #6b7280; margin-top: 10px; word-break: keep-all; }
+
+  .cd-draft-flag {
+    background: rgba(251,191,36,0.12); border: 1px dashed var(--yellow); color: var(--yellow);
+    font-size: 12px; border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; text-align: center;
+  }
+
+  /* ── 추이 차트 박스 ───────────────────────── */
+  .cd-chart-box { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px 16px 14px; margin-bottom: 14px; }
+  .cd-chart-title { font-size: 13px; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
+  .cd-chart-title .cd-chart-range { color: var(--text-dim); font-weight: 500; font-size: 11.5px; }
+  .cd-chart-canvas-wrap { position: relative; width: 100%; height: 240px; }
+  .cd-chart-legend-note { font-size: 11px; color: var(--text-dim); margin-top: 8px; }
+  .cd-chart-footnote { font-size: 11px; color: #6b7280; margin-top: 10px; word-break: keep-all; }
+  @media (max-width: 480px) { .cd-chart-canvas-wrap { height: 200px; } }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="brand"><span class="mark">M</span>Master Score Lab</div>
+  <ul>
+    <li><a href="index.html">홈</a></li>
+    <li><a href="dashboard-condensed-draft.html" class="active">대시보드(축약 초안)</a></li>
+    <li><a href="btc.html">BTC</a></li>
+    <li><a href="charts.html">차트</a></li>
+    <li><a href="blog.html">블로그</a></li>
+    <li><a href="youtube.html">유튜브</a></li>
+  </ul>
+</nav>
+
+<div class="cd-wrap">
+
+  <div class="cd-draft-flag">🚧 디자인 초안입니다 — 아직 dashboard.html을 대체하지 않았습니다. 데이터는 2026-09-14 v1.2 실측치를 그대로 사용했습니다.</div>
+
+  <div class="cd-topbar">
+    <span class="meta">2026-09-14 (월) 18:00 KST · v1.2</span>
+    <a class="full-link" href="https://movenine.blogspot.com/" target="_blank" rel="noopener">전체 리포트 보기 →</a>
+  </div>
+
+  <!-- ══════════ 히어로 ══════════ -->
+  <div class="cd-hero">
+    <div class="cd-hero-top">
+      <div class="cd-score-num">48<small> / 100</small></div>
+      <div class="cd-score-delta">▲9</div>
+    </div>
+    <div class="cd-score-verdict">🟡 혼재·경계 모드</div>
+    <div class="cd-score-why">유동성이 <b>TGA 급감</b>으로 개선됐지만, 정작 발작의 진앙인 <b>금리 스트레스는 더 악화</b>됐습니다 (US10Y 4.95%).</div>
+
+    <details class="cd-more">
+      <summary>왜 이렇게 판정했는지 더 보기</summary>
+      <div class="cd-more-body">
+        48점은 09-07(39) 대비 9점 올랐지만, 반등의 원인이 유동성 단일 축(TGA -$84.6B)이며 금리 스트레스는 오히려 더 악화됐습니다(-2 유지, US10Y 4.77%→4.95%). 유동성 개선이 실제 위험선호 회복으로 이어지는지, 아니면 금리 레벨이 계속 발목을 잡을지가 다음 업데이트의 핵심 관전 포인트입니다.
+      </div>
+    </details>
+  </div>
+
+  <!-- ══════════ 하위 스코어 4개 ══════════ -->
+  <div class="cd-subscores">
+    <div class="cd-sub-card"><div class="label">유동성</div><div class="val"><span class="cd-dot dot-g"></span>+1</div></div>
+    <div class="cd-sub-card"><div class="label">금리스트레스</div><div class="val"><span class="cd-dot dot-r"></span>-2</div></div>
+    <div class="cd-sub-card"><div class="label">신용</div><div class="val"><span class="cd-dot dot-g"></span>+1</div></div>
+    <div class="cd-sub-card"><div class="label">AI 사이클</div><div class="val"><span class="cd-dot dot-y"></span>0</div></div>
+  </div>
+
+  <!-- ══════════ 추이 차트 (중간 삽입) ══════════ -->
+  <div class="cd-chart-box">
+    <div class="cd-chart-title">📈 Master Score 추이 <span class="cd-chart-range">(08-08 ~ 09-07)</span></div>
+    <div class="cd-chart-canvas-wrap"><canvas id="cdComboChart"></canvas></div>
+    <div class="cd-chart-legend-note">그래프 위에 마우스를 올리면 해당 시점의 5개 스코어가 함께 표시됩니다.</div>
+
+    <div class="cd-score-why" style="margin-top:12px;">이번 구간 반등(34→39)은 전적으로 <b>AI 사이클 개선</b>에서 나왔고, <b>금리 스트레스는 여전히 바닥</b>(-2)입니다.</div>
+    <details class="cd-more">
+      <summary>추이 해설 더 보기</summary>
+      <div class="cd-more-body">
+        9월 국채 발작(Fed·BOJ·ECB 동시긴축 우려)은 08/31~09/01 고점(미 10년물 4.80%) 대비 4.77%로 소폭 진정됐으나 해소되지는 않았습니다. 이번 주 Master Score 반등(34→39)은 전적으로 AI 사이클 개선(반도체 업종 회복, -1→0)에서 나왔고, 금리 스트레스는 -2로 그대로입니다. 같은 기간 코스피는 중동 리스크發 -3.47% 급락에서 사상 최고치권으로 5거래일 만에 완전히 반전했습니다(배경은 확인 중).
+      </div>
+    </details>
+    <div class="cd-chart-footnote">⏳ 09-14(48) 포인트는 아직 <code>score_history.md</code>에 정식 기록 전이라 이번 차트에는 반영하지 않았습니다 — 다음 갱신 시 추가됩니다.</div>
+  </div>
+
+  <!-- ══════════ 조기경보 한 줄 ══════════ -->
+  <div class="cd-row-line">
+    <span class="cd-row-label">🚨 조기경보</span>
+    <span class="cd-row-value">
+      <span class="cd-badge-mini badge-red">🔴 1 US10Y</span>
+      <span class="cd-badge-mini badge-orange">🟠 1 USD/JPY</span>
+    </span>
+  </div>
+
+  <!-- ══════════ 블랙스완 한 줄 ══════════ -->
+  <div class="cd-row-line">
+    <span class="cd-row-label">🦢 블랙스완</span>
+    <span class="cd-row-value">국채 발작 심화 · 코스피 재하락 · 지정학 완화 조짐</span>
+  </div>
+
+  <!-- ══════════ KOSPI 한 줄 ══════════ -->
+  <div class="cd-row-line">
+    <span class="cd-row-label">🇰🇷 KOSPI</span>
+    <span class="cd-row-value">사상 최고치권 → 재하락 (-2.6%)</span>
+  </div>
+
+  <!-- ══════════ BTC 티저 ══════════ -->
+  <a class="cd-btc-teaser" href="btc.html">
+    <div class="left">
+      <div class="icon">🪙</div>
+      <div>
+        <div class="title">BTC 파생시장 <span class="hz-badge">1H</span></div>
+        <div class="state">롱 쏠림 심화 · 백워데이션 유지</div>
+      </div>
+    </div>
+    <div class="arrow">자세히 →</div>
+  </a>
+
+  <div class="cd-footer-strip">
+    <a href="https://movenine.blogspot.com/" target="_blank" rel="noopener">평가의견 전문 · 핵심 매크로 지표 전체 보기 →</a>
+    <div class="disc">⚠️ 참고용 정보 제공이며 투자 권유·자문이 아닙니다. Master Score는 자체 산정 주관적 지표입니다.</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+(function(){
+  var gridColor = 'rgba(255,255,255,0.05)';
+  var tickStyle = { color: '#9aa1b2', font: { size: 10.5 } };
+  var labels = ['08-08','08-13','08-14','08-18','08-18b','08-25','08-29','09-02','09-07'];
+
+  function ds(label, data, color, isMaster) {
+    return {
+      label: label,
+      data: data,
+      borderColor: color,
+      backgroundColor: isMaster ? 'rgba(255,255,255,0.06)' : 'transparent',
+      borderWidth: isMaster ? 2 : 1.25,
+      borderCapStyle: 'round',
+      borderJoinStyle: 'round',
+      fill: isMaster ? 'origin' : false,
+      tension: 0.4,
+      cubicInterpolationMode: 'monotone',
+      pointRadius: isMaster ? 2.5 : 2,
+      pointHoverRadius: isMaster ? 6 : 5,
+      pointBackgroundColor: color,
+      pointBorderColor: '#14171f',
+      pointBorderWidth: 1.5,
+      pointHoverBorderWidth: 2
+    };
+  }
+
+  new Chart(document.getElementById('cdComboChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        ds('Master', [34,51,51,43,39,41,41,34,39], '#ffffff', true),
+        ds('유동성', [50,50,50,25,50,50,50,50,50], '#fbbf24'),
+        ds('금리', [0,25,25,25,0,25,25,0,0], '#f87171'),
+        ds('신용', [75,75,75,75,75,75,75,75,75], '#34d399'),
+        ds('AI', [25,75,75,75,50,25,25,25,50], '#60a5fa')
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true, position: 'top', align: 'end',
+          labels: { color: '#c7cbd6', font: { size: 10.5 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, padding: 12 }
+        },
+        tooltip: {
+          mode: 'index', intersect: false,
+          backgroundColor: '#0b0d12', borderColor: '#262b38', borderWidth: 1,
+          titleColor: '#e8eaed', bodyColor: '#c7cbd6',
+          padding: 10, cornerRadius: 8, displayColors: true, boxPadding: 4,
+          titleFont: { size: 11.5, weight: '700' }, bodyFont: { size: 11.5 }
+        }
+      },
+      scales: {
+        y: { min: 0, max: 100, grid: { color: gridColor, drawTicks: false }, border: { display: false }, ticks: tickStyle },
+        x: { grid: { display: false }, border: { display: false }, ticks: tickStyle }
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>

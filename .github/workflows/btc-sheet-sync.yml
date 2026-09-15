@@ -2,8 +2,8 @@ name: BTC Derivatives Log Sync
 
 on:
   schedule:
-    - cron: '37 * * * *'   # 매시 37분 (UTC) — 매시 5분에 예약 실행이 전혀 발동하지 않아 시각 조정
-  workflow_dispatch: {}
+    - cron: '37 * * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write

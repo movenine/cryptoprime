@@ -96,6 +96,7 @@
     color: #6b7280; font-size: 11.5px; text-align: center; gap: 6px; word-break: keep-all;
   }
   .chart-card svg { width: 100%; height: 70px; }
+  .chart-canvas-wrap { position: relative; width: 100%; height: 130px; }
 
   .btc-disclaimer {
     margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--card-border);
@@ -205,32 +206,32 @@
 
     <div class="chart-card">
       <div class="chart-title"><span class="live-dot"></span>Open Interest & Notional OI</div>
-      <div class="chart-body">데이터 축적 중 (현재 2개 지점)<br>수집기가 쌓일수록 추세선이 길어집니다</div>
+      <div class="chart-body" id="chartBodyOi"><div class="chart-canvas-wrap"><canvas id="chartOi"></canvas></div></div>
     </div>
 
     <div class="chart-card">
       <div class="chart-title"><span class="live-dot"></span>Long/Short Ratio (계정/포지션/글로벌)</div>
-      <div class="chart-body">데이터 축적 중 (현재 2개 지점)</div>
+      <div class="chart-body" id="chartBodyLs"><div class="chart-canvas-wrap"><canvas id="chartLs"></canvas></div></div>
     </div>
 
     <div class="chart-card">
       <div class="chart-title"><span class="live-dot"></span>Taker Buy/Sell Ratio</div>
-      <div class="chart-body">데이터 축적 중 (현재 2개 지점)</div>
+      <div class="chart-body" id="chartBodyTaker"><div class="chart-canvas-wrap"><canvas id="chartTaker"></canvas></div></div>
     </div>
 
     <div class="chart-card">
       <div class="chart-title"><span class="live-dot"></span>Basis (Mark−Index)</div>
-      <div class="chart-body">데이터 축적 중 (현재 2개 지점)</div>
+      <div class="chart-body" id="chartBodyBasis"><div class="chart-canvas-wrap"><canvas id="chartBasis"></canvas></div></div>
     </div>
 
     <div class="chart-card">
       <div class="chart-title"><span class="live-dot"></span>Funding Rate</div>
-      <div class="chart-body">데이터 축적 중 (현재 2개 지점)</div>
+      <div class="chart-body" id="chartBodyFunding"><div class="chart-canvas-wrap"><canvas id="chartFunding"></canvas></div></div>
     </div>
 
     <div class="chart-card">
       <div class="chart-title"><span class="live-dot"></span>OI / 시가총액 비율</div>
-      <div class="chart-body">데이터 축적 중 (현재 2개 지점)</div>
+      <div class="chart-body" id="chartBodyOiRatio"><div class="chart-canvas-wrap"><canvas id="chartOiRatio"></canvas></div></div>
     </div>
 
   </div>
@@ -252,6 +253,7 @@
   </div>
 </footer>
 <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
 (function () {
   function fmtUsd(n) {
@@ -315,8 +317,110 @@
       if (foot) {
         foot.innerHTML = '<sup>*</sup> 데이터 출처: <code>data/btc_derivatives_log.csv</code> — 로컬 Python(Binance API)이 "BTC Derivatives Log" 구글시트에 적재하면, GitHub Actions가 매시 동기화하고 가격×OI 매트릭스 + L/S 계정·포지션 디버전스 기준 해석을 계산합니다. 표는 최신 5건만 표시합니다. Perp Volume 컬럼은 아직 수집되지 않아 잠정적으로 Notional OI로 표기합니다.';
       }
+
+      renderCharts(rows);
     })
-    .catch(function () { /* 자동 수집 데이터 로드 실패 — 기존 수동 기록 유지 */ });
+    .catch(function () { /* 자동 수집 데이터 로드 실패 — 기존 수동 기록 유지, 차트는 비워둠 */ });
+
+  // '1.3652→1.3753' 형태에서 최종값(마지막 화살표 뒤 숫자)만 추출 — scripts/btc_sheet_sync.py의 parse_trend_final과 동일 규칙
+  function parseTrendFinal(v) {
+    if (!v) return NaN;
+    var parts = String(v).split('→');
+    return parseFloat(parts[parts.length - 1]);
+  }
+
+  function baseLineDataset(label, data, color, opts) {
+    opts = opts || {};
+    return Object.assign({
+      label: label,
+      data: data,
+      borderColor: color,
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: opts.dashed ? [4, 3] : undefined,
+      pointRadius: 0,
+      pointHoverRadius: 3,
+      tension: 0.3,
+      spanGaps: true,
+      yAxisID: opts.yAxisID || 'y'
+    }, opts.extra || {});
+  }
+
+  function renderChart(canvasId, labels, datasets, extraScales) {
+    var el = document.getElementById(canvasId);
+    if (!el || typeof Chart === 'undefined') return;
+    var gridColor = 'rgba(255,255,255,0.05)';
+    var tickStyle = { color: '#9aa1b2', font: { size: 9.5 }, maxTicksLimit: 5, autoSkip: true };
+    var scales = Object.assign({
+      x: { grid: { display: false }, border: { display: false }, ticks: tickStyle },
+      y: { grid: { color: gridColor, drawTicks: false }, border: { display: false }, ticks: tickStyle }
+    }, extraScales || {});
+
+    new Chart(el, {
+      type: 'line',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: datasets.length > 1, position: 'top', align: 'end',
+            labels: { color: '#c7cbd6', font: { size: 9.5 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 5, boxHeight: 5, padding: 8 }
+          },
+          tooltip: {
+            mode: 'index', intersect: false,
+            backgroundColor: '#0b0d12', borderColor: '#262b38', borderWidth: 1,
+            titleColor: '#e8eaed', bodyColor: '#c7cbd6',
+            padding: 8, cornerRadius: 8, titleFont: { size: 10.5 }, bodyFont: { size: 10.5 }
+          }
+        },
+        scales: scales
+      }
+    });
+  }
+
+  function renderCharts(rows) {
+    if (!rows.length) return;
+    var labels = rows.map(function (r) { return r['기록일시(KST)']; });
+
+    // 1) Open Interest & Notional OI (듀얼 축)
+    renderChart('chartOi', labels, [
+      baseLineDataset('OI(BTC)', rows.map(function (r) { return parseFloat(r['OI(BTC)']); }), '#60a5fa'),
+      baseLineDataset('Notional OI ($B)', rows.map(function (r) { return parseFloat(r['Notional OI(USD)']) / 1e9; }), '#fbbf24', { yAxisID: 'y1' })
+    ], {
+      y1: { position: 'right', grid: { display: false }, border: { display: false }, ticks: { color: '#9aa1b2', font: { size: 9.5 }, maxTicksLimit: 5 } }
+    });
+
+    // 2) Long/Short Ratio (계정/포지션/글로벌) — '이전→이후' 형태에서 최종값만 사용
+    renderChart('chartLs', labels, [
+      baseLineDataset('계정', rows.map(function (r) { return parseTrendFinal(r['TopTrader L/S(계정) 추세']); }), '#34d399'),
+      baseLineDataset('포지션', rows.map(function (r) { return parseTrendFinal(r['TopTrader L/S(포지션) 추세']); }), '#fbbf24'),
+      baseLineDataset('글로벌', rows.map(function (r) { return parseTrendFinal(r['Global L/S 추세']); }), '#f87171')
+    ]);
+
+    // 3) Taker Buy/Sell Ratio (최근 + Min/Max 밴드)
+    renderChart('chartTaker', labels, [
+      baseLineDataset('Max', rows.map(function (r) { return parseFloat(r['Taker 구간 Max']); }), '#6b7280', { dashed: true }),
+      baseLineDataset('최근', rows.map(function (r) { return parseFloat(r['Taker BuySellRatio(최근)']); }), '#60a5fa'),
+      baseLineDataset('Min', rows.map(function (r) { return parseFloat(r['Taker 구간 Min']); }), '#6b7280', { dashed: true })
+    ]);
+
+    // 4) Basis (Mark−Index)
+    renderChart('chartBasis', labels, [
+      baseLineDataset('Basis', rows.map(function (r) { return parseFloat(r['Basis']); }), '#f87171')
+    ]);
+
+    // 5) Funding Rate
+    renderChart('chartFunding', labels, [
+      baseLineDataset('Funding Rate (%)', rows.map(function (r) { return parseFloat(r['Funding Rate(%)']); }), '#fbbf24')
+    ]);
+
+    // 6) OI / 시가총액 비율
+    renderChart('chartOiRatio', labels, [
+      baseLineDataset('OI/시총 (%)', rows.map(function (r) { return parseFloat(r['OI/시총비율(%)']); }), '#34d399')
+    ]);
+  }
 })();
 </script>
 </body>

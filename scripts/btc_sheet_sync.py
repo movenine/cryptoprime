@@ -18,6 +18,7 @@ import io
 import os
 import urllib.error
 import urllib.request
+from typing import Literal, Optional
 
 SHEET_ID = "1-NOv34PjewTj8JQqURz7xlTd81yzbFfiBa5tsM8MgPE"
 SHEET_GID = "0"  # 시트 탭이 여러 개이고 로그가 첫 탭이 아니면 실제 gid로 교체
@@ -37,14 +38,16 @@ BROWSER_UA = (
 
 OUT_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "btc_derivatives_log.csv")
 
-FLAT_BAND_PRICE = 0.1   # % — 가격 중립 밴드 (btc.html state-matrix 캡션과 동일 기준)
-FLAT_BAND_OI = 0.3      # % — OI 중립 밴드
+FLAT_BAND_PRICE = 0.1   # % — 가격 중립 밴드. 반드시 OI와 동일한 행 간(약 10분) 기준으로 적용한다
+FLAT_BAND_OI = 0.3      # % — OI 중립 밴드 (행 간 기준)
 
-PRICE_CHG_COL = "24h변동%"
+PRICE_COL = "가격"           # 24h변동%가 아니라 이 컬럼을 행 간 비교에 사용한다 (표시용 24h%와 시간창이 다름)
+PRICE_CHG_COL = "24h변동%"   # 표시(화면 노출)용으로만 별도 보존, 해석 로직에는 사용하지 않음
 OI_COL = "OI(BTC)"
-OI_TREND_COL = "OI추세"
 LS_ACCOUNTS_COL = "TopTrader L/S(계정) 추세"
 LS_POSITIONS_COL = "TopTrader L/S(포지션) 추세"
+
+Direction = Literal["up", "flat", "down"]
 
 ARROW_UP = {"▲", "up", "UP", "상승"}
 ARROW_DOWN = {"▼", "down", "DOWN", "하락"}
@@ -88,57 +91,76 @@ def to_float(s):
         return None
 
 
-def trend_direction(value, prev_num=None, cur_num=None, band=0.0):
-    """추세 컬럼이 화살표/텍스트면 그대로 방향을 읽고, 숫자면 전 행 대비로 판정한다."""
+def parse_trend_final(value: Optional[str]) -> Optional[float]:
+    """'1.3652→1.3753' 형태에서 최종값(마지막 화살표 뒤 숫자)만 추출한다."""
+    if not value:
+        return None
+    tail = str(value).split("→")[-1].strip()
+    return to_float(tail)
+
+
+def trend_direction(value, prev_num: Optional[float] = None, cur_num: Optional[float] = None, band: float = 0.0) -> Optional[Direction]:
+    """숫자 비교로 방향을 판정한다. 비교할 값이 하나라도 없으면 None(데이터 부족)을 반환한다."""
     if value:
         v = str(value).strip()
         if v in ARROW_UP:
             return "up"
         if v in ARROW_DOWN:
             return "down"
-    if prev_num is not None and cur_num is not None and prev_num != 0:
-        diff_pct = (cur_num - prev_num) / prev_num * 100
-        if diff_pct > band:
-            return "up"
-        if diff_pct < -band:
-            return "down"
-        return "flat"
+    if prev_num is None or cur_num is None or prev_num == 0:
+        return None
+    diff_pct = (cur_num - prev_num) / prev_num * 100
+    if diff_pct > band:
+        return "up"
+    if diff_pct < -band:
+        return "down"
     return "flat"
 
 
-def classify_verdict(price_dir, oi_dir):
-    if price_dir == "up" and oi_dir == "up":
-        return "신규 롱 유입 가능성"
-    if price_dir == "up" and oi_dir == "down":
-        return "숏 커버링 가능성"
-    if price_dir == "down" and oi_dir == "up":
-        return "신규 숏 유입 가능성"
-    if price_dir == "down" and oi_dir == "down":
-        return "롱 청산 가능성"
-    if price_dir == "up":
-        return "완만한 롱 우위"
-    if price_dir == "down":
-        return "완만한 숏 우위"
-    if oi_dir == "up":
-        return "포지션 확대(방향 미확정)"
-    if oi_dir == "down":
-        return "포지션 정리·관망"
-    return "중립·박스권"
+_VERDICT_MATRIX: dict[tuple[Direction, Direction], str] = {
+    ("up", "up"): "신규 롱 유입 가능성",
+    ("up", "flat"): "완만한 롱 우위 가능성",
+    ("up", "down"): "숏 커버링 가능성",
+    ("flat", "up"): "포지션 확대 가능성",
+    ("flat", "flat"): "중립·박스권",
+    ("flat", "down"): "정리·관망 가능성",
+    ("down", "up"): "신규 숏 유입 가능성",
+    ("down", "flat"): "완만한 숏 우위 가능성",
+    ("down", "down"): "롱 청산 가능성",
+}
+
+
+def classify_verdict(price_dir: Direction, oi_dir: Direction) -> str:
+    key = (price_dir, oi_dir)
+    if key not in _VERDICT_MATRIX:
+        raise ValueError(f"Unexpected direction pair: {key!r}")
+    return _VERDICT_MATRIX[key]
 
 
 def interpret(rows):
     for i, row in enumerate(rows):
-        price_chg = to_float(row.get(PRICE_CHG_COL)) or 0.0
-        price_dir = "up" if price_chg > FLAT_BAND_PRICE else "down" if price_chg < -FLAT_BAND_PRICE else "flat"
+        prev_price = to_float(rows[i - 1].get(PRICE_COL)) if i > 0 else None
+        cur_price = to_float(row.get(PRICE_COL))
+        price_dir = trend_direction(None, prev_price, cur_price, FLAT_BAND_PRICE)
 
         prev_oi = to_float(rows[i - 1].get(OI_COL)) if i > 0 else None
         cur_oi = to_float(row.get(OI_COL))
-        oi_dir = trend_direction(row.get(OI_TREND_COL), prev_oi, cur_oi, FLAT_BAND_OI)
+        oi_dir = trend_direction(None, prev_oi, cur_oi, FLAT_BAND_OI)
+
+        if price_dir is None or oi_dir is None:
+            row["해석(자동)"] = "데이터 부족"
+            continue
 
         verdict = classify_verdict(price_dir, oi_dir)
 
-        acc_dir = trend_direction(row.get(LS_ACCOUNTS_COL))
-        pos_dir = trend_direction(row.get(LS_POSITIONS_COL))
+        prev_acc = parse_trend_final(rows[i - 1].get(LS_ACCOUNTS_COL)) if i > 0 else None
+        cur_acc = parse_trend_final(row.get(LS_ACCOUNTS_COL))
+        acc_dir = trend_direction(None, prev_acc, cur_acc, band=0.0)
+
+        prev_pos = parse_trend_final(rows[i - 1].get(LS_POSITIONS_COL)) if i > 0 else None
+        cur_pos = parse_trend_final(row.get(LS_POSITIONS_COL))
+        pos_dir = trend_direction(None, prev_pos, cur_pos, band=0.0)
+
         if acc_dir in ("up", "down") and pos_dir in ("up", "down") and acc_dir != pos_dir:
             verdict += " · 계정/포지션 L/S 디버전스(소액↔대형 반대 포지셔닝 가능성)"
 

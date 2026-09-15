@@ -24,6 +24,9 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: 단위 테스트 (해석 로직)
+        run: python -m unittest discover -s tests -v
+
       - name: 구글시트 동기화 + 해석 계산
         run: python scripts/btc_sheet_sync.py
 

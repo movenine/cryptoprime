@@ -92,11 +92,11 @@
     width: 7px; height: 7px; border-radius: 999px; background: var(--green); display: inline-block;
   }
   .chart-card .chart-body {
-    height: 130px; display: flex; align-items: center; justify-content: center; flex-direction: column;
+    height: 195px; display: flex; align-items: center; justify-content: center; flex-direction: column;
     color: #6b7280; font-size: 11.5px; text-align: center; gap: 6px; word-break: keep-all;
   }
   .chart-card svg { width: 100%; height: 70px; }
-  .chart-canvas-wrap { position: relative; width: 100%; height: 130px; }
+  .chart-canvas-wrap { position: relative; width: 100%; height: 195px; }
 
   .btc-disclaimer {
     margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--card-border);
@@ -129,13 +129,13 @@
   <div class="table-scroll">
     <table class="btc-history-table">
       <thead>
-        <tr><th>날짜</th><th>가격변동</th><th>Perp Volume</th><th>해석</th></tr>
+        <tr><th>날짜</th><th>가격변동</th><th>OI 변화량</th><th>해석</th></tr>
       </thead>
       <tbody id="btcHistoryBody">
         <tr>
           <td>09-03 21:25</td>
           <td><span class="chg-up">$78,005 (+0.57%)</span></td>
-          <td>Notional OI $8.37B<sup>*</sup></td>
+          <td>—</td>
           <td>신규 포지션 유입 가능성 — 가격·OI 동반 상승, 다만 후반부 L/S 3개 지표 숏 비중 재확대</td>
         </tr>
         <tr>
@@ -148,56 +148,56 @@
     </table>
   </div>
   <div class="btc-history-footnote" id="btcHistoryFootnote">
-    <sup>*</sup> 위 2건은 2026-09-03 수동 수집분입니다. 로컬 Python이 Binance API로 "BTC Derivatives Log" 구글시트에 계속 적재하면, GitHub Actions가 매시 그 시트를 <code>data/btc_derivatives_log.csv</code>로 동기화하고 가격×OI 매트릭스 + L/S 계정·포지션 디버전스 기준 해석을 계산합니다. 이 표는 그 파일의 최신 5건을 자동으로 불러와 표시합니다(불러오기 실패 시 위 수동 기록이 유지됩니다). Perp Volume 컬럼은 아직 수집되지 않아 잠정적으로 Notional OI로 표기합니다.
+    위 2건은 2026-09-03 수동 수집분입니다. 로컬 Python이 Binance API로 "BTC Derivatives Log" 구글시트에 계속 적재하면, GitHub Actions가 매시 그 시트를 동기화하고 가격×OI 매트릭스 + L/S 계정·포지션 디버전스 기준 해석을 계산합니다. 이 표는 최신 5건을 자동으로 불러와 표시합니다(불러오기 실패 시 위 수동 기록이 유지됩니다).
   </div>
 
   <!-- ══════════ 2. 상태 박스 ══════════ -->
   <div class="btc-section-label">🎯 현재 상태 판정</div>
 
   <div class="state-hero">
-    <div class="icon">📈</div>
-    <div class="name">신규 롱 유입 가능성</div>
-    <div class="sub">가격 상승 × OI 증가 조합 (직전 두 실측 지점 기준)</div>
+    <div class="icon" id="stateIcon">📈</div>
+    <div class="name" id="stateName">신규 롱 유입 가능성</div>
+    <div class="sub" id="stateSub">가격 상승 × OI 증가 조합 (직전 두 실측 지점 기준)</div>
   </div>
 
-  <div class="state-matrix">
+  <div class="state-matrix" id="stateMatrix">
     <div class="hcell"></div>
     <div class="hcell">OI 증가</div>
     <div class="hcell">OI 보합</div>
     <div class="hcell">OI 감소</div>
 
     <div class="hcell">가격 상승</div>
-    <div class="cell active">신규 롱 유입</div>
-    <div class="cell">완만한 롱 우위</div>
-    <div class="cell">숏 커버링</div>
+    <div class="cell" data-price="up" data-oi="up">신규 롱 유입</div>
+    <div class="cell" data-price="up" data-oi="flat">완만한 롱 우위</div>
+    <div class="cell" data-price="up" data-oi="down">숏 커버링</div>
 
     <div class="hcell">가격 보합</div>
-    <div class="cell">포지션 확대<br>(방향 미확정)</div>
-    <div class="cell">중립·박스권</div>
-    <div class="cell">포지션 정리·관망</div>
+    <div class="cell" data-price="flat" data-oi="up">포지션 확대<br>(방향 미확정)</div>
+    <div class="cell" data-price="flat" data-oi="flat">중립·박스권</div>
+    <div class="cell" data-price="flat" data-oi="down">포지션 정리·관망</div>
 
     <div class="hcell">가격 하락</div>
-    <div class="cell">신규 숏 유입</div>
-    <div class="cell">완만한 숏 우위</div>
-    <div class="cell">롱 청산</div>
+    <div class="cell" data-price="down" data-oi="up">신규 숏 유입</div>
+    <div class="cell" data-price="down" data-oi="flat">완만한 숏 우위</div>
+    <div class="cell" data-price="down" data-oi="down">롱 청산</div>
   </div>
-  <div class="state-caption">기준 시점: 2026-09-03 19:35 → 21:25 · 중립 밴드: 가격 ±0.1%, OI ±0.3%</div>
+  <div class="state-caption" id="stateCaption">기준 시점: 2026-09-03 19:35 → 21:25 · 중립 밴드: 가격 ±0.1%, OI ±0.3%</div>
 
-  <div class="arrow-line">
+  <div class="arrow-line" id="arrowLine">
     가격 <span class="up">▲</span> <b>$78,005</b> (+0.57%) · OI <span class="up">▲</span> Notional <b>$8.37B</b> ·
     Funding <b>0.00586%</b> · Basis <span class="down">▼</span> -42~-16 (백워데이션 유지) ·
     L/S계정 <span class="down">▼</span> <b>1.23</b> · L/S포지션 <span class="down">▼</span> <b>1.93</b> ·
     Global L/S <span class="down">▼</span> <b>1.17</b> · OI/시총 <b>0.532~0.534%</b>
   </div>
 
-  <div class="risk-line">
+  <div class="risk-line" id="riskLine">
     ⚠️ Accounts·Positions·Global L/S 3개 지표가 모두 20:10~30 피크 이후 후반부에 숏 비중 재확대 — 상승 구간에서 신규 숏 진입 또는 롱 청산이 동시 진행됐을 가능성이 있어, 다음 기록에서 방향성 재확인이 필요합니다.
   </div>
 
-  <div class="summary-grid">
-    <div class="summary-card"><div class="label">가격</div><div class="value">$78,005</div></div>
-    <div class="summary-card"><div class="label">Funding Rate</div><div class="value">0.00586%</div></div>
-    <div class="summary-card"><div class="label">Basis</div><div class="value">-42~-16</div></div>
+  <div class="summary-grid" id="summaryGrid">
+    <div class="summary-card"><div class="label">가격</div><div class="value" id="summaryPrice">$78,005</div></div>
+    <div class="summary-card"><div class="label">Funding Rate</div><div class="value" id="summaryFunding">0.00586%</div></div>
+    <div class="summary-card"><div class="label">Basis</div><div class="value" id="summaryBasis">-42~-16</div></div>
   </div>
 
   <!-- ══════════ 3. 차트 (2~3열) ══════════ -->
@@ -266,6 +266,14 @@
     if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
     return fmtUsd(n);
   }
+  // 직전 값 대비 방향 판정 — scripts/btc_sheet_sync.py의 trend_direction()과 동일 규칙(밴드 기준)
+  function trendDir(prev, cur, band) {
+    if (!isFinite(prev) || !isFinite(cur) || prev === 0) return null;
+    var diffPct = (cur - prev) / prev * 100;
+    if (diffPct > band) return 'up';
+    if (diffPct < -band) return 'down';
+    return 'flat';
+  }
   // 따옴표로 감싼 필드(콤마·줄바꿈 포함 가능)를 지원하는 최소 CSV 파서
   function parseCsv(text) {
     var rows = [], row = [], field = '', inQuotes = false;
@@ -298,29 +306,130 @@
       var rows = parseCsv(text);
       if (rows.length === 0) return; // 자동 수집 데이터 없음 — 기존 수동 기록 유지
 
-      var latest = rows.slice(-5).reverse();
+      var n = rows.length;
+      var latestCount = Math.min(5, n);
+      var latest = rows.slice(-latestCount).map(function (r, i) {
+        var globalIdx = n - latestCount + i;
+        var prevRow = globalIdx > 0 ? rows[globalIdx - 1] : null;
+        var curOi = parseFloat(r['OI(BTC)']);
+        var prevOi = prevRow ? parseFloat(prevRow['OI(BTC)']) : NaN;
+        var oiDelta = (isFinite(curOi) && isFinite(prevOi)) ? curOi - prevOi : NaN;
+        var oiDeltaPct = (isFinite(oiDelta) && prevOi) ? (oiDelta / prevOi * 100) : NaN;
+        return { row: r, oiDelta: oiDelta, oiDeltaPct: oiDeltaPct };
+      }).reverse();
+
       var tbody = document.getElementById('btcHistoryBody');
-      tbody.innerHTML = latest.map(function (r) {
+      tbody.innerHTML = latest.map(function (item) {
+        var r = item.row;
         var chg = parseFloat(r['24h변동%']);
         var price = parseFloat(r['가격']);
         var chgClass = chg >= 0 ? 'chg-up' : 'chg-down';
         var sign = chg >= 0 ? '+' : '';
+        var oiCell = '—';
+        if (isFinite(item.oiDelta)) {
+          var oiClass = item.oiDelta >= 0 ? 'chg-up' : 'chg-down';
+          var oiSign = item.oiDelta >= 0 ? '+' : '';
+          oiCell = '<span class="' + oiClass + '">' + oiSign + item.oiDelta.toLocaleString('en-US', { maximumFractionDigits: 1 }) +
+            ' BTC' + (isFinite(item.oiDeltaPct) ? ' (' + oiSign + item.oiDeltaPct.toFixed(2) + '%)' : '') + '</span>';
+        }
         return '<tr>' +
           '<td>' + (r['기록일시(KST)'] || '') + '</td>' +
           '<td><span class="' + chgClass + '">' + (isFinite(price) ? fmtUsd(price) : '—') + ' (' + sign + (isFinite(chg) ? chg.toFixed(2) : '—') + '%)</span></td>' +
-          '<td>' + fmtCompact(r['Notional OI(USD)']) + '<sup>*</sup></td>' +
+          '<td>' + oiCell + '</td>' +
           '<td>' + (r['해석(자동)'] || '') + '</td>' +
         '</tr>';
       }).join('');
 
       var foot = document.getElementById('btcHistoryFootnote');
       if (foot) {
-        foot.innerHTML = '<sup>*</sup> 데이터 출처: <code>data/btc_derivatives_log.csv</code> — 로컬 Python(Binance API)이 "BTC Derivatives Log" 구글시트에 적재하면, GitHub Actions가 매시 동기화하고 가격×OI 매트릭스 + L/S 계정·포지션 디버전스 기준 해석을 계산합니다. 표는 최신 5건만 표시합니다. Perp Volume 컬럼은 아직 수집되지 않아 잠정적으로 Notional OI로 표기합니다.';
+        foot.textContent = '로컬 Python(Binance API)이 "BTC Derivatives Log" 구글시트에 적재하면, GitHub Actions가 매시 동기화하고 가격×OI 매트릭스 + L/S 계정·포지션 디버전스 기준 해석을 계산합니다. 표는 최신 5건만 표시합니다.';
       }
 
+      renderStateSection(rows);
       renderCharts(rows);
     })
     .catch(function () { /* 자동 수집 데이터 로드 실패 — 기존 수동 기록 유지, 차트는 비워둠 */ });
+
+  function renderStateSection(rows) {
+    if (rows.length < 2) return;
+    var cur = rows[rows.length - 1];
+    var prev = rows[rows.length - 2];
+
+    var curPrice = parseFloat(cur['가격']), prevPrice = parseFloat(prev['가격']);
+    var curOi = parseFloat(cur['OI(BTC)']), prevOi = parseFloat(prev['OI(BTC)']);
+    var priceDir = trendDir(prevPrice, curPrice, 0.1);
+    var oiDir = trendDir(prevOi, curOi, 0.3);
+
+    var matrix = document.getElementById('stateMatrix');
+    if (matrix) {
+      Array.prototype.forEach.call(matrix.querySelectorAll('.cell'), function (c) { c.classList.remove('active'); });
+      if (priceDir && oiDir) {
+        var activeCell = matrix.querySelector('.cell[data-price="' + priceDir + '"][data-oi="' + oiDir + '"]');
+        if (activeCell) activeCell.classList.add('active');
+      }
+    }
+
+    var verdict = cur['해석(자동)'] || '데이터 부족';
+    var mainLabel = verdict.split(' · ')[0];
+    var hasDivergence = verdict.indexOf('디버전스') !== -1;
+    var iconMap = { up: '📈', down: '📉', flat: '➖' };
+
+    var stateIcon = document.getElementById('stateIcon');
+    var stateName = document.getElementById('stateName');
+    var stateSub = document.getElementById('stateSub');
+    if (stateIcon) stateIcon.textContent = priceDir ? iconMap[priceDir] : '❓';
+    if (stateName) stateName.textContent = mainLabel;
+    if (stateSub) {
+      var priceLabel = { up: '가격 상승', down: '가격 하락', flat: '가격 보합' }[priceDir] || '가격 데이터 부족';
+      var oiLabel = { up: 'OI 증가', down: 'OI 감소', flat: 'OI 보합' }[oiDir] || 'OI 데이터 부족';
+      stateSub.textContent = priceLabel + ' × ' + oiLabel + ' 조합 (직전 두 실측 지점 기준)';
+    }
+
+    var caption = document.getElementById('stateCaption');
+    if (caption) caption.textContent = '기준 시점: ' + (prev['기록일시(KST)'] || '—') + ' → ' + (cur['기록일시(KST)'] || '—') + ' · 중립 밴드: 가격 ±0.1%, OI ±0.3%';
+
+    var lsAcc = parseTrendFinal(cur['TopTrader L/S(계정) 추세']);
+    var lsPos = parseTrendFinal(cur['TopTrader L/S(포지션) 추세']);
+    var lsGlobal = parseTrendFinal(cur['Global L/S 추세']);
+    var lsAccDir = trendDir(parseTrendFinal(prev['TopTrader L/S(계정) 추세']), lsAcc, 0);
+    var lsPosDir = trendDir(parseTrendFinal(prev['TopTrader L/S(포지션) 추세']), lsPos, 0);
+    var lsGlobalDir = trendDir(parseTrendFinal(prev['Global L/S 추세']), lsGlobal, 0);
+    var arrowChar = { up: '▲', down: '▼', flat: '→' };
+    function arrowSpan(dir) {
+      if (!dir) return '';
+      return '<span class="' + (dir === 'up' ? 'up' : dir === 'down' ? 'down' : '') + '">' + arrowChar[dir] + '</span>';
+    }
+
+    var basis = parseFloat(cur['Basis']);
+    var funding = cur['Funding Rate(%)'];
+    var oiMcapRatio = cur['OI/시총비율(%)'];
+
+    var arrowLine = document.getElementById('arrowLine');
+    if (arrowLine) {
+      arrowLine.innerHTML =
+        '가격 ' + arrowSpan(priceDir) + ' <b>' + (isFinite(curPrice) ? fmtUsd(curPrice) : '—') + '</b> · OI ' + arrowSpan(oiDir) + ' Notional <b>' + fmtCompact(cur['Notional OI(USD)']) + '</b> · ' +
+        'Funding <b>' + (funding !== undefined && funding !== '' ? funding + '%' : '—') + '</b> · Basis <b>' + (isFinite(basis) ? basis.toFixed(1) : '—') + '</b>' + (isFinite(basis) ? ' (' + (basis < 0 ? '백워데이션' : '콘탱고') + ')' : '') + ' · ' +
+        'L/S계정 ' + arrowSpan(lsAccDir) + ' <b>' + (isFinite(lsAcc) ? lsAcc.toFixed(4) : '—') + '</b> · L/S포지션 ' + arrowSpan(lsPosDir) + ' <b>' + (isFinite(lsPos) ? lsPos.toFixed(4) : '—') + '</b> · ' +
+        'Global L/S ' + arrowSpan(lsGlobalDir) + ' <b>' + (isFinite(lsGlobal) ? lsGlobal.toFixed(4) : '—') + '</b> · OI/시총 <b>' + (oiMcapRatio !== undefined && oiMcapRatio !== '' ? oiMcapRatio + '%' : '—') + '</b>';
+    }
+
+    var riskLine = document.getElementById('riskLine');
+    if (riskLine) {
+      if (hasDivergence) {
+        riskLine.style.display = '';
+        riskLine.innerHTML = '⚠️ TopTrader L/S 계정·포지션 비율이 서로 반대 방향으로 움직이고 있습니다 — 소액 계정과 대형 계정이 반대로 포지셔닝했을 가능성이 있어, 다음 기록에서 방향성 재확인이 필요합니다.';
+      } else {
+        riskLine.style.display = 'none';
+      }
+    }
+
+    var summaryPrice = document.getElementById('summaryPrice');
+    var summaryFunding = document.getElementById('summaryFunding');
+    var summaryBasis = document.getElementById('summaryBasis');
+    if (summaryPrice) summaryPrice.textContent = isFinite(curPrice) ? fmtUsd(curPrice) : '—';
+    if (summaryFunding) summaryFunding.textContent = (funding !== undefined && funding !== '' ? funding + '%' : '—');
+    if (summaryBasis) summaryBasis.textContent = isFinite(basis) ? basis.toFixed(1) : '—';
+  }
 
   // '1.3652→1.3753' 형태에서 최종값(마지막 화살표 뒤 숫자)만 추출 — scripts/btc_sheet_sync.py의 parse_trend_final과 동일 규칙
   function parseTrendFinal(v) {

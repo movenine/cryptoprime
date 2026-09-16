@@ -1,4 +1,4 @@
-name: Reuters ROI Fetch Test (1회성)
+name: Reuters ROI Article Fetch Test (1회성)
 
 on:
   workflow_dispatch:
@@ -15,5 +15,5 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: 로이터 ROI 페이지 패치 테스트
+      - name: 로이터 ROI 개별 기사 패치 테스트
         run: python scripts/test_reuters_fetch.py

@@ -148,7 +148,7 @@
   <div class="cd-chart-box">
     <div class="cd-chart-title">📈 Master Score 추이 <span class="cd-chart-range">(08-08 ~ 09-16)</span></div>
     <div class="cd-chart-canvas-wrap"><canvas id="cdComboChart"></canvas></div>
-    <div class="cd-chart-legend-note">그래프 위에 마우스를 올리면 해당 시점의 5개 스코어가 함께 표시됩니다.</div>
+    <div class="cd-chart-legend-note">0을 기준으로 위(초록)는 리스크온, 아래(빨강)는 리스크오프 방향입니다. 배경 띠는 판정 구간, 마우스를 올리면 해당 시점 5개 스코어 원점수가 함께 표시됩니다.</div>
 
     <div class="cd-score-why" style="margin-top:12px;">09-14 반등(48) 이후, <b>신용 축이 로그 개설 후 처음 하향</b>되며 44로 소폭 되돌렸습니다. <b>유동성·금리·AI는 모두 무변동입니다.</b></div>
     <details class="cd-more">
@@ -215,18 +215,68 @@
 (function(){
   var gridColor = 'rgba(255,255,255,0.05)';
   var tickStyle = { color: '#9aa1b2', font: { size: 10.5 } };
+  var greenLine = '#34d399', redLine = '#f87171';
   var labels = ['08-08','08-13','08-14','08-18','08-18b','08-25','08-29','09-02','09-07','09-14','09-16'];
 
+  // 0을 기준으로 양/음을 나눈 중심축 값. 원본(-2~+2 하위 스코어, 0~100 Master 계산값)은
+  // 그대로 두고 차트에 그리는 좌표만 -50~+50으로 선형 변환한다 (하위 스코어는 raw*25,
+  // Master는 계산값-50). 카드·로그에 쓰는 공식 표기(0-3 산식)는 변경하지 않는다.
+  var masterCentered = [-16, 1, 1, -7, -11, -9, -9, -16, -11, -2, -6];
+  var liquidityCentered = [0, 0, 0, -25, 0, 0, 0, 0, 0, 25, 25];
+  var rateCentered = [-50, -25, -25, -25, -50, -25, -25, -50, -50, -50, -50];
+  var creditCentered = [25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 0];
+  var aiCentered = [-25, 25, 25, 25, 0, -25, -25, -25, 0, 0, 0];
+  // score_history.md 판정 열 원문 그대로 (계산식 재적용 없이 로그와 100% 일치시킨다)
+  var verdicts = ['리스크오프 경계','혼재·경계 모드','혼재·경계 모드','혼재·경계 모드','리스크오프 경계','리스크오프 경계','리스크오프 경계','리스크오프 경계','리스크오프 경계','혼재·경계 모드','혼재·경계 모드'];
+
+  function subLabel(name, centered) {
+    var raw = centered / 25;
+    var sign = raw > 0 ? '+' : '';
+    return name + ': ' + sign + raw + ' (' + (centered + 50) + '점)';
+  }
+  function masterLabel(centered, idx) {
+    return 'Master: ' + (centered + 50) + '/100 · ' + verdicts[idx];
+  }
+
+  // 판정 구간(0-3 산식 기준, 0~100 → -50~+50으로 이동)별 배경 띠 + 우측 라벨
+  var riskBandsPlugin = {
+    id: 'riskBands',
+    beforeDraw: function(chart) {
+      var yScale = chart.scales.y, ctx = chart.ctx, area = chart.chartArea;
+      var bands = [
+        { from: 30, to: 50, color: 'rgba(52,211,153,0.12)', text: '뚜렷한 리스크온', textColor: '#34d399' },
+        { from: 10, to: 30, color: 'rgba(52,211,153,0.05)', text: '완만한 리스크온', textColor: '#6ee7b7' },
+        { from: -10, to: 10, color: 'rgba(251,191,36,0.06)', text: '혼재·경계 모드', textColor: '#fbbf24' },
+        { from: -30, to: -10, color: 'rgba(251,146,60,0.06)', text: '리스크오프 경계', textColor: '#fb923c' },
+        { from: -50, to: -30, color: 'rgba(248,113,113,0.12)', text: '뚜렷한 리스크오프', textColor: '#f87171' }
+      ];
+      ctx.save();
+      bands.forEach(function(b) {
+        var yTop = yScale.getPixelForValue(b.to), yBottom = yScale.getPixelForValue(b.from);
+        ctx.fillStyle = b.color;
+        ctx.fillRect(area.left, yTop, area.right - area.left, yBottom - yTop);
+        ctx.fillStyle = b.textColor;
+        ctx.globalAlpha = 0.75;
+        ctx.font = '9px "IBM Plex Mono", monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(b.text, area.right - 6, (yTop + yBottom) / 2);
+        ctx.globalAlpha = 1;
+      });
+      ctx.restore();
+    }
+  };
+
   function ds(label, data, color, isMaster) {
-    return {
+    var cfg = {
       label: label,
       data: data,
       borderColor: color,
-      backgroundColor: isMaster ? 'rgba(255,255,255,0.06)' : 'transparent',
-      borderWidth: isMaster ? 2 : 1.25,
+      backgroundColor: 'transparent',
+      borderWidth: isMaster ? 2.25 : 1.25,
       borderCapStyle: 'round',
       borderJoinStyle: 'round',
-      fill: isMaster ? 'origin' : false,
+      fill: false,
       tension: 0.4,
       cubicInterpolationMode: 'monotone',
       pointRadius: isMaster ? 2.5 : 2,
@@ -236,6 +286,20 @@
       pointBorderWidth: 1.5,
       pointHoverBorderWidth: 2
     };
+    if (isMaster) {
+      // 0을 기준으로 선·채우기 색상을 초록/빨강으로 2분화한다
+      cfg.segment = {
+        borderColor: function(ctx2) {
+          return (ctx2.p0.parsed.y >= 0 && ctx2.p1.parsed.y >= 0) ? greenLine : redLine;
+        }
+      };
+      cfg.pointBackgroundColor = function(ctx2) {
+        var v = ctx2.parsed ? ctx2.parsed.y : 0;
+        return v >= 0 ? greenLine : redLine;
+      };
+      cfg.fill = { target: { value: 0 }, above: 'rgba(52,211,153,0.14)', below: 'rgba(248,113,113,0.14)' };
+    }
+    return cfg;
   }
 
   new Chart(document.getElementById('cdComboChart'), {
@@ -243,13 +307,14 @@
     data: {
       labels: labels,
       datasets: [
-        ds('Master', [34,51,51,43,39,41,41,34,39,48,44], '#ffffff', true),
-        ds('유동성', [50,50,50,25,50,50,50,50,50,75,75], '#fbbf24'),
-        ds('금리', [0,25,25,25,0,25,25,0,0,0,0], '#f87171'),
-        ds('신용', [75,75,75,75,75,75,75,75,75,75,50], '#34d399'),
-        ds('AI', [25,75,75,75,50,25,25,25,50,50,50], '#60a5fa')
+        ds('Master', masterCentered, '#ffffff', true),
+        ds('유동성', liquidityCentered, '#fbbf24'),
+        ds('금리', rateCentered, '#f87171'),
+        ds('신용', creditCentered, '#34d399'),
+        ds('AI', aiCentered, '#60a5fa')
       ]
     },
+    plugins: [riskBandsPlugin],
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -264,11 +329,23 @@
           backgroundColor: '#0b0d12', borderColor: '#262b38', borderWidth: 1,
           titleColor: '#e8eaed', bodyColor: '#c7cbd6',
           padding: 10, cornerRadius: 8, displayColors: true, boxPadding: 4,
-          titleFont: { size: 11.5, weight: '700' }, bodyFont: { size: 11.5 }
+          titleFont: { size: 11.5, weight: '700' }, bodyFont: { size: 11.5 },
+          callbacks: {
+            label: function(ctx2) {
+              var idx = ctx2.dataIndex, v = ctx2.parsed.y, name = ctx2.dataset.label;
+              if (name === 'Master') return masterLabel(v, idx);
+              return subLabel(name, v);
+            }
+          }
         }
       },
       scales: {
-        y: { min: 0, max: 100, grid: { color: gridColor, drawTicks: false }, border: { display: false }, ticks: tickStyle },
+        y: {
+          min: -55, max: 55,
+          grid: { color: function(c) { return c.tick.value === 0 ? 'rgba(255,255,255,0.35)' : gridColor; }, drawTicks: false },
+          border: { display: false },
+          ticks: Object.assign({}, tickStyle, { stepSize: 25 })
+        },
         x: { grid: { display: false }, border: { display: false }, ticks: tickStyle }
       }
     }

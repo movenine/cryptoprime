@@ -178,7 +178,7 @@
   <!-- ══════════ KOSPI 한 줄 ══════════ -->
   <div class="cd-row-line">
     <span class="cd-row-label">🇰🇷 KOSPI</span>
-    <span class="cd-row-value">6,717.97 · 3거래일간 보합권 등락 (09-14 대비 +0.5%)</span>
+    <span class="cd-row-value">6,717.97 (+0.5%) · 외국인 순매도 지속하나 규모 축소(-3.9조→-1.4조원) · USD/KRW 데이터 미확보</span>
   </div>
 
   <!-- ══════════ BTC 티저 ══════════ -->
@@ -215,40 +215,38 @@
 (function(){
   var gridColor = 'rgba(255,255,255,0.05)';
   var tickStyle = { color: '#9aa1b2', font: { size: 10.5 } };
-  var greenLine = '#34d399', redLine = '#f87171';
+  var masterBlue = '#38bdf8';
   var labels = ['08-08','08-13','08-14','08-18','08-18b','08-25','08-29','09-02','09-07','09-14','09-16'];
 
-  // 0을 기준으로 양/음을 나눈 중심축 값. 원본(-2~+2 하위 스코어, 0~100 Master 계산값)은
-  // 그대로 두고 차트에 그리는 좌표만 -50~+50으로 선형 변환한다 (하위 스코어는 raw*25,
-  // Master는 계산값-50). 카드·로그에 쓰는 공식 표기(0-3 산식)는 변경하지 않는다.
-  var masterCentered = [-16, 1, 1, -7, -11, -9, -9, -16, -11, -2, -6];
-  var liquidityCentered = [0, 0, 0, -25, 0, 0, 0, 0, 0, 25, 25];
-  var rateCentered = [-50, -25, -25, -25, -50, -25, -25, -50, -50, -50, -50];
-  var creditCentered = [25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 0];
-  var aiCentered = [-25, 25, 25, 25, 0, -25, -25, -25, 0, 0, 0];
+  // 카드·로그에 쓰는 0~100 Master 계산값·환산점(0-3 산식)을 그대로 차트 좌표로 사용한다.
+  var masterData = [34, 51, 51, 43, 39, 41, 41, 34, 39, 48, 44];
+  var liquidityData = [50, 50, 50, 25, 50, 50, 50, 50, 50, 75, 75];
+  var rateData = [0, 25, 25, 25, 0, 25, 25, 0, 0, 0, 0];
+  var creditData = [75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 50];
+  var aiData = [25, 75, 75, 75, 50, 25, 25, 25, 50, 50, 50];
   // score_history.md 판정 열 원문 그대로 (계산식 재적용 없이 로그와 100% 일치시킨다)
   var verdicts = ['리스크오프 경계','혼재·경계 모드','혼재·경계 모드','혼재·경계 모드','리스크오프 경계','리스크오프 경계','리스크오프 경계','리스크오프 경계','리스크오프 경계','혼재·경계 모드','혼재·경계 모드'];
 
-  function subLabel(name, centered) {
-    var raw = centered / 25;
+  function subLabel(name, v) {
+    var raw = (v - 50) / 25;
     var sign = raw > 0 ? '+' : '';
-    return name + ': ' + sign + raw + ' (' + (centered + 50) + '점)';
+    return name + ': ' + sign + raw + ' (' + v + '점)';
   }
-  function masterLabel(centered, idx) {
-    return 'Master: ' + (centered + 50) + '/100 · ' + verdicts[idx];
+  function masterLabel(v, idx) {
+    return 'Master: ' + v + '/100 · ' + verdicts[idx];
   }
 
-  // 판정 구간(0-3 산식 기준, 0~100 → -50~+50으로 이동)별 배경 띠 + 우측 라벨
+  // 판정 구간(0-3 산식, 0~100)별 배경 띠 + 우측 라벨
   var riskBandsPlugin = {
     id: 'riskBands',
     beforeDraw: function(chart) {
       var yScale = chart.scales.y, ctx = chart.ctx, area = chart.chartArea;
       var bands = [
-        { from: 30, to: 50, color: 'rgba(52,211,153,0.12)', text: '뚜렷한 리스크온', textColor: '#34d399' },
-        { from: 10, to: 30, color: 'rgba(52,211,153,0.05)', text: '완만한 리스크온', textColor: '#6ee7b7' },
-        { from: -10, to: 10, color: 'rgba(251,191,36,0.06)', text: '혼재·경계 모드', textColor: '#fbbf24' },
-        { from: -30, to: -10, color: 'rgba(251,146,60,0.06)', text: '리스크오프 경계', textColor: '#fb923c' },
-        { from: -50, to: -30, color: 'rgba(248,113,113,0.12)', text: '뚜렷한 리스크오프', textColor: '#f87171' }
+        { from: 80, to: 100, color: 'rgba(52,211,153,0.12)', text: '뚜렷한 리스크온', textColor: '#34d399' },
+        { from: 60, to: 80, color: 'rgba(52,211,153,0.05)', text: '완만한 리스크온', textColor: '#6ee7b7' },
+        { from: 40, to: 60, color: 'rgba(251,191,36,0.06)', text: '혼재·경계 모드', textColor: '#fbbf24' },
+        { from: 20, to: 40, color: 'rgba(251,146,60,0.06)', text: '리스크오프 경계', textColor: '#fb923c' },
+        { from: 0, to: 20, color: 'rgba(248,113,113,0.12)', text: '뚜렷한 리스크오프', textColor: '#f87171' }
       ];
       ctx.save();
       bands.forEach(function(b) {
@@ -267,39 +265,40 @@
     }
   };
 
-  function ds(label, data, color, isMaster) {
-    var cfg = {
+  // 화면에는 Master 라인만 보이도록 하되, 하위 스코어 4개는 투명 데이터셋으로 유지해
+  // index 모드 툴팁에서는 계속 함께 표시되게 한다 (범례에서도 Master만 노출).
+  function ds(label, data, isMaster) {
+    if (isMaster) {
+      return {
+        label: label,
+        data: data,
+        borderColor: masterBlue,
+        backgroundColor: 'rgba(56,189,248,0.16)',
+        borderWidth: 3,
+        borderCapStyle: 'round',
+        borderJoinStyle: 'round',
+        fill: 'origin',
+        tension: 0.4,
+        cubicInterpolationMode: 'monotone',
+        pointRadius: 3,
+        pointHoverRadius: 7,
+        pointBackgroundColor: masterBlue,
+        pointBorderColor: '#0b0d12',
+        pointBorderWidth: 2,
+        pointHoverBorderWidth: 2.5
+      };
+    }
+    return {
       label: label,
       data: data,
-      borderColor: color,
+      borderColor: 'transparent',
       backgroundColor: 'transparent',
-      borderWidth: isMaster ? 2.25 : 1.25,
-      borderCapStyle: 'round',
-      borderJoinStyle: 'round',
+      borderWidth: 0,
       fill: false,
-      tension: 0.4,
-      cubicInterpolationMode: 'monotone',
-      pointRadius: isMaster ? 2.5 : 2,
-      pointHoverRadius: isMaster ? 6 : 5,
-      pointBackgroundColor: color,
-      pointBorderColor: '#14171f',
-      pointBorderWidth: 1.5,
-      pointHoverBorderWidth: 2
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      pointHitRadius: 6
     };
-    if (isMaster) {
-      // 0을 기준으로 선·채우기 색상을 초록/빨강으로 2분화한다
-      cfg.segment = {
-        borderColor: function(ctx2) {
-          return (ctx2.p0.parsed.y >= 0 && ctx2.p1.parsed.y >= 0) ? greenLine : redLine;
-        }
-      };
-      cfg.pointBackgroundColor = function(ctx2) {
-        var v = ctx2.parsed ? ctx2.parsed.y : 0;
-        return v >= 0 ? greenLine : redLine;
-      };
-      cfg.fill = { target: { value: 0 }, above: 'rgba(52,211,153,0.14)', below: 'rgba(248,113,113,0.14)' };
-    }
-    return cfg;
   }
 
   new Chart(document.getElementById('cdComboChart'), {
@@ -307,11 +306,11 @@
     data: {
       labels: labels,
       datasets: [
-        ds('Master', masterCentered, '#ffffff', true),
-        ds('유동성', liquidityCentered, '#fbbf24'),
-        ds('금리', rateCentered, '#f87171'),
-        ds('신용', creditCentered, '#34d399'),
-        ds('AI', aiCentered, '#60a5fa')
+        ds('Master', masterData, true),
+        ds('유동성', liquidityData),
+        ds('금리', rateData),
+        ds('신용', creditData),
+        ds('AI', aiData)
       ]
     },
     plugins: [riskBandsPlugin],
@@ -322,7 +321,10 @@
       plugins: {
         legend: {
           display: true, position: 'top', align: 'end',
-          labels: { color: '#c7cbd6', font: { size: 10.5 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, padding: 12 }
+          labels: {
+            color: '#c7cbd6', font: { size: 10.5 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 6, boxHeight: 6, padding: 12,
+            filter: function(item) { return item.text === 'Master'; }
+          }
         },
         tooltip: {
           mode: 'index', intersect: false,
@@ -341,10 +343,10 @@
       },
       scales: {
         y: {
-          min: -55, max: 55,
-          grid: { color: function(c) { return c.tick.value === 0 ? 'rgba(255,255,255,0.35)' : gridColor; }, drawTicks: false },
+          min: 0, max: 100,
+          grid: { color: gridColor, drawTicks: false },
           border: { display: false },
-          ticks: Object.assign({}, tickStyle, { stepSize: 25 })
+          ticks: Object.assign({}, tickStyle, { stepSize: 20 })
         },
         x: { grid: { display: false }, border: { display: false }, ticks: tickStyle }
       }

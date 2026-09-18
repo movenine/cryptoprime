@@ -71,6 +71,10 @@ a:hover { text-decoration: underline; }
 .site-footer .links { margin-top: 8px; }
 .site-footer .links a { color: #6b7280; margin-right: 14px; }
 .site-footer .links a:hover { color: var(--text-dim); }
+.site-footer .footer-meta { margin-top: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.site-footer .footer-meta a { color: #6b7280; }
+.site-footer .footer-meta a:hover { color: var(--text-dim); }
+.site-footer .visitor-badge { height: 20px; vertical-align: middle; }
 
 /* ── Simple placeholder pages ───────────────────────── */
 .page-wrap { max-width: 880px; margin: 0 auto; padding: 40px 20px 20px; }
